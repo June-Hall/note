@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程笔记AI自动结构化整理平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F6F1E8;
+            color: #1F2421;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(251, 247, 239, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #E2D9C8;
+            padding: 1rem 3rem;
+            z-index: 100;
+        }
+
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #C8853F;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #1F2421;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #C8853F;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem 3rem;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* Left Panel - Upload */
+        .left-panel {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(31, 36, 33, 0.08);
+            position: sticky;
+            top: 90px;
+        }
+
+        .panel-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1F2421;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            background: #F0E3D0;
+            color: #C8853F;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #E2D9C8;
+            border-radius: 0.75rem;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            background: #FBF7EF;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area:hover {
+            border-color: #C8853F;
+            background: #F0E3D0;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #1F2421;
+            margin-bottom: 0.3rem;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #8A8A80;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* File List */
+        .file-list {
+            margin-bottom: 1.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            background: #FBF7EF;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            border: 1px solid #E2D9C8;
+        }
+
+        .file-item .remove-btn {
+            color: #C8853F;
+            cursor: pointer;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .file-item .remove-btn:hover {
+            color: #A86B2C;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1F2421;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #E2D9C8;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #C8853F;
+            background: #FFFFFF;
+        }
+
+        .form-textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        /* Process Button */
+        .process-btn {
+            width: 100%;
+            padding: 0.9rem 2rem;
+            background: #C8853F;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            background: #A86B2C;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(200, 133, 63, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #8A8A80;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* History Section */
+        .history-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #E2D9C8;
+        }
+
+        .history-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #8A8A80;
+            margin-bottom: 1rem;
+        }
+
+        .history-item {
+            background: #FBF7EF;
+            padding: 0.9rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.6rem;
+            cursor: pointer;
+            border-left: 3px solid #C8853F;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: #F0E3D0;
+            transform: translateX(4px);
+        }
+
+        .history-item .subject {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin-bottom: 0.3rem;
+        }
+
+        .history-item .time {
+            font-size: 0.8rem;
+            color: #8A8A80;
+        }
+
+        /* Right Panel - Editor */
+        .right-panel {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(31, 36, 33, 0.08);
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #E2D9C8;
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #8A8A80;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #C8853F;
+        }
+
+        .tab.active {
+            color: #C8853F;
+            border-bottom-color: #C8853F;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Status Message */
+        .status-message {
+            padding: 1rem 1.5rem;
+            background: #F0E3D0;
+            border-left: 4px solid #C8853F;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: #1F2421;
+            font-size: 0.95rem;
+        }
+
+        /* Download Section */
+        .download-section {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .download-btn {
+            padding: 0.7rem 1.3rem;
+            background: #C8853F;
+            color: #FFFFFF;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #A86B2C;
+            transform: translateY(-2px);
+        }
+
+        /* Editor Toolbar */
+        .editor-toolbar {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            padding: 0.5rem 1rem;
+            background: #FBF7EF;
+            border: 1px solid #E2D9C8;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1F2421;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #F0E3D0;
+            border-color: #C8853F;
+        }
+
+        /* Markdown Preview */
+        .markdown-preview {
+            padding: 1.5rem;
+            line-height: 1.8;
+            color: #1F2421;
+        }
+
+        .markdown-preview h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1F2421;
+            border-bottom: 2px solid #E2D9C8;
+            padding-bottom: 0.8rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .markdown-preview h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin: 1.3rem 0 0.8rem;
+        }
+
+        .markdown-preview h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin: 1rem 0 0.6rem;
+        }
+
+        .markdown-preview blockquote {
+            background: #FBF7EF;
+            border-left: 4px solid #C8853F;
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+
+        .markdown-preview code {
+            background: #FBF7EF;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-preview pre {
+            background: #2A2723;
+            color: #F6F1E8;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .markdown-preview pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Highlight Colors */
+        .highlight-red {
+            background: #ffebee;
+            color: #c0392b;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+        }
+
+        .highlight-yellow {
+            background: #fff9e6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+        }
+
+        .highlight-green {
+            background: #e8f5e9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+        }
+
+        /* Note Annotation */
+        .note-annotation {
+            background: #F0E3D0;
+            border-left: 3px solid #C8853F;
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+
+        .note-label {
+            font-size: 0.85rem;
+            color: #C8853F;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Mindmap Container */
+        #mindmap-container {
+            height: 100%;
+            min-height: 600px;
+            border: 1px solid #E2D9C8;
+            border-radius: 0.75rem;
+            background: #FBF7EF;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 1.5rem;
+            }
+
+            .left-panel {
+                position: relative;
+                top: 0;
+            }
+
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                gap: 1.5rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <div class="logo">NotesAI</div>
+            <ul class="nav-links">
+                <li><a href="#upload">开始整理</a></li>
+                <li><a href="#history">历史记录</a></li>
+                <li><a href="#knowledge">AI知识库</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel: Upload & Controls -->
+        <div class="left-panel">
+            <span class="eyebrow">🎓 AI驱动</span>
+            <h1 class="panel-title">课程笔记整理</h1>
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text">拖拽或点击上传文件</div>
+                <div class="upload-hint">支持音频、图片、PDF、PPT、Word</div>
+                <input type="file" id="fileInput" multiple
+                    accept=".mp3,.wav,.m4a,.ogg,.flac,.jpg,.jpeg,.png,.bmp,.webp,.pdf,.pptx,.txt,.md,.srt">
+            </div>
+
+            <!-- File List -->
+            <div class="file-list" id="fileList"></div>
+
+            <!-- Course Name Input -->
+            <div class="form-group">
+                <label class="form-label">课程名称</label>
+                <input type="text" class="form-input" id="subjectInput"
+                    placeholder="例如：高等数学 - 第三章">
+            </div>
+
+            <!-- Outline Input -->
+            <div class="form-group">
+                <label class="form-label">教师提纲与考试重点（可选）</label>
+                <textarea class="form-textarea" id="outlineInput"
+                    placeholder="输入老师的课程提纲、考试范围和重点...&#10;&#10;例如：&#10;第一章 新媒体概论&#10;重点：&#10;1. 媒介融合&#10;2. 用户生产内容&#10;&#10;考试范围：第一章至第三章"></textarea>
+            </div>
+
+            <!-- Process Button -->
+            <button class="process-btn" id="processBtn">🚀 开始AI整理</button>
+
+            <!-- History Section -->
+            <div class="history-section" id="history">
+                <div class="history-title">📜 历史记录</div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Editor & Preview -->
+        <div class="right-panel">
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="editor">📝 编辑笔记</div>
+                <div class="tab" data-tab="preview">👁️ 预览</div>
+                <div class="tab" data-tab="mindmap">🗺️ 思维导图</div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Editor Tab -->
+                <div class="tab-pane active" id="editor-pane">
+                    <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+                    <div class="editor-toolbar">
+                        <button class="toolbar-btn" onclick="highlightText('red')">🔴 考试重点</button>
+                        <button class="toolbar-btn" onclick="highlightText('yellow')">🟡 待复习</button>
+                        <button class="toolbar-btn" onclick="highlightText('green')">🟢 已掌握</button>
+                        <button class="toolbar-btn" onclick="addNote()">📌 添加批注</button>
+                        <button class="toolbar-btn" onclick="insertHeading(2)">H2</button>
+                        <button class="toolbar-btn" onclick="insertHeading(3)">H3</button>
+                    </div>
+
+                    <textarea id="markdownEditor"></textarea>
+
+                    <div class="download-section" id="downloadSection"></div>
+                </div>
+
+                <!-- Preview Tab -->
+                <div class="tab-pane" id="preview-pane">
+                    <div class="markdown-preview" id="preview"></div>
+                </div>
+
+                <!-- Mindmap Tab -->
+                <div class="tab-pane" id="mindmap-pane">
+                    <div id="mindmap-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+    <script>
+        // Initialize Markdown Editor
+        const editor = new EasyMDE({
+            element: document.getElementById('markdownEditor'),
+            autosave: { enabled: true, uniqueId: "notesEditor" },
+            spellChecker: false,
+            toolbar: false,
+            status: false,
+            minHeight: "500px",
+        });
+
+        // File Upload Handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const subjectInput = document.getElementById('subjectInput');
+        const outlineInput = document.getElementById('outlineInput');
+        const processBtn = document.getElementById('processBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        let selectedFiles = [];
+        let currentJobId = null;
+
+        // Upload Area Click
+        uploadArea.onclick = () => fileInput.click();
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            uploadArea.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        uploadArea.addEventListener('drop', e => {
+            selectedFiles = Array.from(e.dataTransfer.files);
+            updateFileList();
+        });
+
+        fileInput.onchange = () => {
+            selectedFiles = Array.from(fileInput.files);
+            updateFileList();
+        };
+
+        // Update File List Display
+        function updateFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            fileList.innerHTML = selectedFiles.map((f, i) =>
+                `<div class="file-item">
+                    <span>📄 ${f.name}</span>
+                    <span class="remove-btn" onclick="removeFile(${i})">✕</span>
+                </div>`
+            ).join('');
+        }
+
+        function removeFile(idx) {
+            selectedFiles.splice(idx, 1);
+            updateFileList();
+        }
+
+        // Process Button - Start AI Processing
+        processBtn.onclick = async () => {
+            if (selectedFiles.length === 0) return alert('请先上传文件');
+            if (!subjectInput.value.trim()) return alert('请输入课程名称');
+
+            processBtn.disabled = true;
+            statusMessage.style.display = 'block';
+            statusMessage.textContent = '📤 正在上传文件...';
+
+            const formData = new FormData();
+            formData.append('subject', subjectInput.value.trim());
+            formData.append('outline', outlineInput.value.trim());
+            selectedFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const res = await fetch('/process', { method: 'POST', body: formData });
+                const { job_id } = await res.json();
+                currentJobId = job_id;
+                pollStatus(job_id);
+                saveHistory(subjectInput.value.trim());
+            } catch (err) {
+                statusMessage.textContent = '❌ 上传失败: ' + err.message;
+                processBtn.disabled = false;
+            }
+        };
+
+        // Poll Status for Processing Progress
+        async function pollStatus(jobId) {
+            const interval = setInterval(async () => {
+                const res = await fetch(`/status/${jobId}`);
+                const data = await res.json();
+                statusMessage.textContent = data.progress || data.status;
+
+                if (data.status === 'done') {
+                    clearInterval(interval);
+                    processBtn.disabled = false;
+
+                    // Load notes into editor
+                    if (data.notes_md) {
+                        editor.value(data.notes_md);
+                        updatePreview();
+                    }
+
+                    // Show download buttons
+                    const downloadSection = document.getElementById('downloadSection');
+                    downloadSection.innerHTML = data.files.map(f =>
+                        `<a href="/download/${jobId}/${f.name}" class="download-btn" download>${f.label}</a>`
+                    ).join('');
+
+                    // Render mindmap
+                    if (data.mindmap) {
+                        renderMindmap(data.mindmap);
+                    }
+
+                    statusMessage.textContent = '✅ AI整理完成！';
+                } else if (data.status === 'error') {
+                    clearInterval(interval);
+                    processBtn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        // Tab Switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-pane').classList.add('active');
+
+                if (tab.dataset.tab === 'preview') {
+                    updatePreview();
+                }
+            };
+        });
+
+        // Toolbar Functions
+        function highlightText(color) {
+            const selectedText = editor.codemirror.getSelection();
+            if (!selectedText) return alert('请先选中文本');
+            const highlighted = `<span class="highlight-${color}">${selectedText}</span>`;
+            editor.codemirror.replaceSelection(highlighted);
+        }
+
+        function addNote() {
+            const note = prompt('输入批注内容：');
+            if (!note) return;
+            const annotation = `\n\n<div class="note-annotation"><div class="note-label">📝 批注</div>${note}</div>\n\n`;
+            editor.codemirror.replaceSelection(annotation);
+        }
+
+        function insertHeading(level) {
+            const text = prompt(`输入 H${level} 标题：`);
+            if (!text) return;
+            editor.codemirror.replaceSelection(`\n${'#'.repeat(level)} ${text}\n`);
+        }
+
+        // Update Preview
+        function updatePreview() {
+            const html = marked.parse(editor.value());
+            document.getElementById('preview').innerHTML = html;
+        }
+
+        // Render Mindmap
+        function renderMindmap(markdown) {
+            const container = document.getElementById('mindmap-container');
+            container.innerHTML = '<svg id="mindmap-svg" style="width: 100%; height: 100%;"></svg>';
+            const { Markmap, Transformer } = window.markmap;
+            const transformer = new Transformer();
+            const { root } = transformer.transform(markdown);
+            Markmap.create('#mindmap-svg', null, root);
+        }
+
+        // History Functions
+        function saveHistory(subject) {
+            loadHistory(subject);
+        }
+
+        async function loadHistory(subject = null) {
+            if (!subject && subjectInput.value.trim()) {
+                subject = subjectInput.value.trim();
+            }
+            if (!subject) {
+                subject = localStorage.getItem('lastCourse') || '';
+            }
+
+            if (subject) {
+                localStorage.setItem('lastCourse', subject);
+                try {
+                    const res = await fetch(`/api/courses/${encodeURIComponent(subject)}/history`);
+                    const data = await res.json();
+                    displayHistory(data.sessions || []);
+                } catch (err) {
+                    console.error('加载历史失败:', err);
+                }
+            }
+        }
+
+        function displayHistory(sessions) {
+            const historyList = document.getElementById('historyList');
+            if (sessions.length === 0) {
+                historyList.innerHTML = '<div style="color: #8A8A80; font-size: 0.85rem; padding: 1rem; text-align: center;">暂无历史记录</div>';
+                return;
+            }
+            historyList.innerHTML = sessions.map(item =>
+                `<div class="history-item" onclick="loadHistoryItem('${item.id}')">
+                    <div class="subject">${item.title}</div>
+                    <div class="time">${new Date(item.created_at).toLocaleString('zh-CN')}</div>
+                </div>`
+            ).join('');
+        }
+
+        async function loadHistoryItem(sessionId) {
+            try {
+                const res = await fetch(`/api/session/${sessionId}/detail`);
+                const session = await res.json();
+                if (session.notes_md) {
+                    editor.value(session.notes_md);
+                    subjectInput.value = session.title;
+                    currentJobId = session.id;
+
+                    // Show download buttons
+                    const downloadSection = document.getElementById('downloadSection');
+                    const safeTitle = session.title.replace(/[/\\]/g, '_');
+                    downloadSection.innerHTML = `
+                        <a href="/download/${session.id}/${safeTitle}.md" class="download-btn" download>Markdown 笔记</a>
+                        <a href="/download/${session.id}/${safeTitle}.docx" class="download-btn" download>Word 文档</a>
+                    `;
+
+                    // Render mindmap
+                    if (session.mindmap_md) {
+                        renderMindmap(session.mindmap_md);
+                    }
+
+                    statusMessage.style.display = 'block';
+                    statusMessage.textContent = '✅ 已加载历史记录';
+                }
+            } catch (err) {
+                alert('加载历史记录失败: ' + err.message);
+            }
+        }
+
+        // Initialize
+        loadHistory();
+        editor.codemirror.on('change', () => {
+            if (document.querySelector('.tab[data-tab="preview"]').classList.contains('active')) {
+                updatePreview();
+            }
+        });
+    </script>
+</body>
+</html>

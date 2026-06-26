@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesAI - 课程笔记AI整理平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F6F1E8;
+            color: #1F2421;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        nav {
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #C8853F;
+        }
+
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a {
+            color: #1F2421; text-decoration: none; font-weight: 500;
+            font-size: 0.95rem; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: #C8853F; }
+
+        /* Hero */
+        .hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 3rem 2rem 5rem;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            background: #F0E3D0;
+            color: #C8853F;
+            padding: 0.4rem 1.1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.8rem;
+        }
+
+        .hero h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 3.6rem;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.2rem;
+            max-width: 14ch;
+        }
+
+        .hero h1 .accent { color: #C8853F; font-style: italic; }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: #8A8A80;
+            max-width: 32ch;
+            margin-bottom: 3.5rem;
+        }
+
+        /* Entry cards */
+        .entries {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 320px));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .entry-card {
+            background: #FFFFFF;
+            border: 1px solid #E2D9C8;
+            border-radius: 1.25rem;
+            padding: 2.5rem 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(31, 36, 33, 0.04);
+        }
+
+        .entry-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(31, 36, 33, 0.12);
+            border-color: #C8853F;
+        }
+
+        .entry-icon {
+            width: 64px; height: 64px;
+            border-radius: 1rem;
+            background: #F0E3D0;
+            color: #C8853F;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.3rem;
+        }
+
+        .entry-card.primary .entry-icon { background: #C8853F; color: #FFFFFF; }
+
+        .entry-card h3 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .entry-card p { color: #8A8A80; font-size: 0.92rem; }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: #8A8A80;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 720px) {
+            .hero h1 { font-size: 2.4rem; }
+            .entries { grid-template-columns: 1fr; max-width: 360px; }
+            nav { padding: 1.2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">NotesAI</div>
+        <ul class="nav-links">
+            <li><a href="/library">课程笔记库</a></li>
+            <li><a href="/workspace">创建新笔记</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <span class="eyebrow">🎓 AI 驱动的课程笔记整理</span>
+        <h1>让 AI 帮你<span class="accent">整理课堂笔记</span></h1>
+        <p class="subtitle">上传录音、课件与截图，自动生成结构化笔记与思维导图。</p>
+
+        <div class="entries">
+            <a href="/library" class="entry-card">
+                <div class="entry-icon">📂</div>
+                <h3>进入课程笔记库</h3>
+                <p>查看已整理的所有课程与笔记</p>
+            </a>
+            <a href="/workspace" class="entry-card primary">
+                <div class="entry-icon">＋</div>
+                <h3>创建新笔记</h3>
+                <p>上传资料并开始新的 AI 整理</p>
+            </a>
+        </div>
+    </section>
+
+    <footer>© 2026 NotesAI · 你的现代化个人知识空间</footer>
+</body>
+</html>

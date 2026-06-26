@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesAI - 课程笔记AI整理平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F6F1E8;
+            color: #1F2421;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(251, 247, 239, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #E2D9C8;
+            padding: 0.9rem 2rem;
+        }
+        .nav-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: 'DM Serif Display', serif; font-size: 1.4rem; font-weight: 700; color: #C8853F; }
+        .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
+        .nav-links a { color: #1F2421; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: color 0.2s; }
+        .nav-links a:hover { color: #C8853F; }
+
+        /* Two Column Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            height: calc(100vh - 62px);
+        }
+        .column {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(31, 36, 33, 0.06);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .column-scroll { overflow-y: auto; flex: 1; }
+        .column-header {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.3rem; font-weight: 600; color: #1F2421;
+            margin-bottom: 1.2rem; padding-bottom: 0.8rem;
+            border-bottom: 2px solid #E2D9C8;
+        }
+        .eyebrow {
+            display: inline-block; background: #F0E3D0; color: #C8853F;
+            padding: 0.3rem 0.8rem; border-radius: 1.5rem;
+            font-size: 0.75rem; font-weight: 600; margin-bottom: 0.8rem;
+        }
+
+        /* Upload */
+        .upload-area {
+            border: 2px dashed #E2D9C8; border-radius: 0.75rem;
+            padding: 2rem 1rem; text-align: center; background: #FBF7EF;
+            cursor: pointer; transition: all 0.3s; margin-bottom: 1rem;
+        }
+        .upload-area:hover { border-color: #C8853F; background: #F0E3D0; }
+        .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .upload-text { font-size: 0.95rem; font-weight: 500; }
+        .upload-hint { font-size: 0.8rem; color: #8A8A80; margin-top: 0.3rem; }
+        input[type="file"] { display: none; }
+
+        /* File list */
+        .file-category { margin-bottom: 1rem; }
+        .category-title {
+            font-size: 0.85rem; font-weight: 600; color: #8A8A80;
+            margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .file-count { background: #F0E3D0; color: #C8853F; padding: 0.1rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; }
+        .file-item {
+            background: #FBF7EF; padding: 0.7rem 0.9rem; border-radius: 0.5rem;
+            margin-bottom: 0.4rem; display: flex; justify-content: space-between;
+            align-items: center; font-size: 0.85rem; border: 1px solid #E2D9C8;
+        }
+        .file-info { display: flex; align-items: center; gap: 0.5rem; flex: 1; overflow: hidden; }
+        .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-action-btn { background: none; border: none; color: #C8853F; cursor: pointer; font-size: 0.85rem; }
+        .file-action-btn:hover { color: #A86B2C; }
+
+        /* Form */
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; }
+        .form-input, .form-textarea {
+            width: 100%; padding: 0.7rem 0.9rem; border: 2px solid #E2D9C8;
+            border-radius: 0.5rem; font-size: 0.9rem; font-family: 'Inter', sans-serif; transition: all 0.2s;
+        }
+        .form-input:focus, .form-textarea:focus { outline: none; border-color: #C8853F; }
+        .form-textarea { min-height: 100px; resize: vertical; }
+
+        /* Buttons */
+        .btn { padding: 0.8rem 1.5rem; border-radius: 0.6rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-primary { width: 100%; background: #C8853F; color: #FFFFFF; }
+        .btn-primary:hover:not(:disabled) { background: #A86B2C; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(200,133,63,0.3); }
+        .btn-primary:disabled { background: #8A8A80; cursor: not-allowed; transform: none; }
+
+        /* Progress */
+        .progress-container { margin: 1rem 0; display: none; }
+        .progress-label { font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+        .progress-bar { width: 100%; height: 8px; background: #E2D9C8; border-radius: 1rem; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg,#C8853F,#A86B2C); border-radius: 1rem; transition: width 0.3s; width: 0%; }
+
+        /* History */
+        .history-item {
+            background: #FBF7EF; padding: 0.8rem; border-radius: 0.5rem; margin-bottom: 0.5rem;
+            border-left: 3px solid #C8853F; transition: all 0.2s;
+            display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+        }
+        .history-item:hover { background: #F0E3D0; }
+        .history-main { flex: 1; min-width: 0; }
+        .history-subject { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .history-time { font-size: 0.75rem; color: #8A8A80; }
+        .history-acts { display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.2s; }
+        .history-item:hover .history-acts { opacity: 1; }
+        .hist-act { cursor: pointer; font-size: 0.9rem; padding: 0.2rem; border-radius: 0.3rem; }
+        .hist-act:hover { background: rgba(0,0,0,0.06); }
+    </style>
+    <style id="canvas-styles">
+        /* Right column tabs */
+        .content-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #E2D9C8; }
+        .content-tab {
+            padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+            color: #8A8A80; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+        }
+        .content-tab:hover { color: #C8853F; }
+        .content-tab.active { color: #C8853F; border-bottom-color: #C8853F; font-weight: 600; }
+
+        .content-pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
+        .content-pane.active { display: flex; }
+
+        /* Editor toolbar */
+        .editor-toolbar {
+            display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+            padding: 0.6rem; background: #FBF7EF; border-radius: 0.6rem; margin-bottom: 0.8rem;
+        }
+        .tool-btn {
+            padding: 0.4rem 0.8rem; background: #FFFFFF; border: 1px solid #E2D9C8;
+            border-radius: 0.4rem; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+        }
+        .tool-btn:hover { background: #F0E3D0; border-color: #C8853F; }
+        .tool-divider { width: 1px; height: 22px; background: #E2D9C8; margin: 0 0.2rem; }
+        .tool-btn.export { background: #C8853F; color: #FFFFFF; border-color: #C8853F; margin-left: auto; font-weight: 600; }
+        .tool-btn.export:hover { background: #A86B2C; }
+
+        /* Canvas (editable knowledge area) */
+        .canvas {
+            flex: 1; overflow-y: auto; padding: 2rem 2.2rem; border: 1px solid #E2D9C8;
+            border-radius: 0.75rem; background: #FFFFFF; line-height: 1.85; outline: none;
+            font-size: 0.98rem;
+        }
+        .canvas:focus { border-color: #C8853F; }
+        .canvas h1 {
+            font-family: 'DM Serif Display', serif; font-size: 1.9rem; font-weight: 600;
+            border-bottom: 2px solid #E2D9C8; padding-bottom: 0.6rem; margin: 0.5rem 0 1.2rem;
+        }
+        .canvas h2 { font-family: 'DM Serif Display', serif; font-size: 1.45rem; margin: 1.4rem 0 0.8rem; }
+        .canvas h3 { font-size: 1.15rem; margin: 1rem 0 0.5rem; color: #4A4A40; }
+        .canvas p { margin: 0.6rem 0; }
+        .canvas ul, .canvas ol { margin: 0.6rem 0 0.6rem 1.5rem; }
+        .canvas li { margin: 0.3rem 0; }
+        .canvas blockquote {
+            background: #FBF7EF; border-left: 4px solid #C8853F; padding: 0.8rem 1.2rem;
+            margin: 0.8rem 0; border-radius: 0.5rem;
+        }
+        .canvas strong { color: #C8853F; }
+        .canvas code { background: #FBF7EF; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-family: Consolas, monospace; font-size: 0.9em; }
+        .canvas pre { background: #2A2723; color: #F6F1E8; padding: 1.2rem; border-radius: 0.6rem; overflow-x: auto; margin: 0.8rem 0; }
+        .canvas pre code { background: none; color: inherit; padding: 0; }
+        .canvas table { border-collapse: collapse; margin: 0.8rem 0; width: 100%; }
+        .canvas th, .canvas td { border: 1px solid #E2D9C8; padding: 0.5rem 0.8rem; text-align: left; }
+        .canvas th { background: #FBF7EF; }
+
+        /* Highlight colors */
+        .hl-red { background: #ffebee; color: #c0392b; padding: 0 0.2rem; border-radius: 0.2rem; }
+        .hl-yellow { background: #fff3c4; padding: 0 0.2rem; border-radius: 0.2rem; }
+        .hl-green { background: #d7f5dd; padding: 0 0.2rem; border-radius: 0.2rem; }
+        .hl-blue { background: #d6e9ff; padding: 0 0.2rem; border-radius: 0.2rem; }
+
+        /* Inline note */
+        .inline-note {
+            display: block; background: #F0E3D0; border-left: 3px solid #C8853F;
+            padding: 0.7rem 1rem; margin: 0.8rem 0; border-radius: 0.5rem; font-size: 0.9rem;
+        }
+        .inline-note .note-label { font-size: 0.78rem; font-weight: 600; color: #C8853F; margin-bottom: 0.2rem; }
+
+        /* AI modify bar */
+        .ai-modify-bar { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
+        .ai-modify-input {
+            flex: 1; padding: 0.7rem 1rem; border: 2px solid #E2D9C8; border-radius: 0.6rem;
+            font-size: 0.9rem; font-family: 'Inter', sans-serif;
+        }
+        .ai-modify-input:focus { outline: none; border-color: #C8853F; }
+        .ai-modify-btn {
+            padding: 0.7rem 1.3rem; background: #C8853F; color: #FFFFFF; border: none;
+            border-radius: 0.6rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; white-space: nowrap;
+        }
+        .ai-modify-btn:hover:not(:disabled) { background: #A86B2C; }
+        .ai-modify-btn:disabled { background: #8A8A80; cursor: not-allowed; }
+
+        /* Mindmap */
+        .mindmap-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .mindmap-toolbar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.6rem; }
+        .mm-btn {
+            padding: 0.4rem 0.8rem; background: #FBF7EF; border: 1px solid #E2D9C8;
+            border-radius: 0.4rem; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+        }
+        .mm-btn:hover { background: #F0E3D0; border-color: #C8853F; }
+        .mindmap-container {
+            flex: 1; min-height: 0; border: 1px solid #E2D9C8; border-radius: 0.75rem;
+            background: #FBF7EF; overflow: auto; position: relative;
+        }
+        #mindmap-svg { width: 100%; height: 100%; min-height: 500px; }
+
+        /* Empty state */
+        .empty-state { text-align: center; padding: 4rem 2rem; color: #8A8A80; margin: auto; }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            background: #2A2723; color: #fff; padding: 0.8rem 1.5rem; border-radius: 0.6rem;
+            font-size: 0.9rem; z-index: 3000; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(31,36,33,0.5); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 1rem; padding: 2rem; max-width: 520px; width: 90%; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+        .modal-title { font-family: 'DM Serif Display', serif; font-size: 1.2rem; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 1.4rem; color: #8A8A80; cursor: pointer; }
+
+        @media (max-width: 1024px) {
+            body { overflow: auto; }
+            .workspace { grid-template-columns: 1fr; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <a href="/" class="logo" style="text-decoration:none;">NotesAI</a>
+            <ul class="nav-links">
+                <li><a href="/">首页</a></li>
+                <li><a href="/library">课程笔记库</a></li>
+                <li><a href="/workspace">创建新笔记</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Two Column Workspace -->
+    <div class="workspace">
+        <!-- Left Column: Materials -->
+        <div class="column">
+            <div class="column-scroll">
+                <span class="eyebrow">🎓 AI驱动</span>
+                <h2 class="column-header">课程资料</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📎</div>
+                    <div class="upload-text">拖拽或点击上传</div>
+                    <div class="upload-hint">支持批量上传 音频/PDF/PPT/图片</div>
+                    <input type="file" id="fileInput" multiple
+                        accept=".mp3,.wav,.m4a,.ogg,.flac,.jpg,.jpeg,.png,.bmp,.webp,.pdf,.pptx,.docx,.txt,.md,.srt">
+                </div>
+
+                <div id="fileCategories">
+                    <div class="file-category" id="audioCategory" style="display:none;">
+                        <div class="category-title">🎤 音频文件 <span class="file-count" id="audioCount">0</span></div>
+                        <div id="audioFiles"></div>
+                    </div>
+                    <div class="file-category" id="docCategory" style="display:none;">
+                        <div class="category-title">📄 文档课件 <span class="file-count" id="docCount">0</span></div>
+                        <div id="docFiles"></div>
+                    </div>
+                    <div class="file-category" id="imageCategory" style="display:none;">
+                        <div class="category-title">🖼️ 图片截图 <span class="file-count" id="imageCount">0</span></div>
+                        <div id="imageFiles"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">保存到课程文件夹</label>
+                    <select class="form-input" id="folderSelect" onchange="onFolderChange()">
+                        <option value="__new__">＋ 新建课程文件夹</option>
+                    </select>
+                    <div class="form-hint" style="font-size:0.75rem; color:#A0A096; margin-top:0.3rem;">支持选择已有文件夹或新建文件夹</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">课程名称</label>
+                    <input type="text" class="form-input" id="subjectInput" placeholder="例如：基础写作 - 第五讲">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">教师提纲与考试重点（可选）</label>
+                    <textarea class="form-textarea" id="outlineInput"
+                        placeholder="输入老师的课程提纲、考试范围...&#10;&#10;例如：&#10;第一章 汉字起源&#10;重点：甲骨文、金文&#10;考试范围：第一至第三章"></textarea>
+                </div>
+
+                <button class="btn btn-primary" id="processBtn">🚀 开始AI整理</button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-label">
+                        <span id="progressText">处理中...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                </div>
+
+                <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid #E2D9C8;">
+                    <div style="font-size:0.9rem; font-weight:600; color:#8A8A80; margin-bottom:0.8rem;">📜 历史记录</div>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Knowledge Canvas + Mindmap -->
+        <div class="column">
+            <div class="content-tabs">
+                <div class="content-tab active" data-tab="canvas">📝 知识工作区</div>
+                <div class="content-tab" data-tab="mindmap">🗺️ 思维导图</div>
+            </div>
+
+            <!-- Canvas Pane -->
+            <div class="content-pane active" id="canvas-pane">
+                <div class="editor-toolbar" id="editorToolbar" style="display:none;">
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('bold')"><b>B</b></button>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('italic')"><i>I</i></button>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('red')">🔴 标红</button>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('yellow')">🟡 黄</button>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('green')">🟢 绿</button>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('blue')">🔵 蓝</button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="addInlineNote()">📝 添加笔记</button>
+                    <button class="tool-btn export" onclick="exportWord()">⬇️ 一键导出 Word</button>
+                </div>
+
+                <div class="empty-state" id="canvasEmpty">
+                    <div class="empty-icon">📝</div>
+                    <div>上传课程资料并开始整理后<br>AI 生成的笔记将显示在这里，可直接编辑</div>
+                </div>
+
+                <div class="canvas" id="canvas" contenteditable="true" spellcheck="false" style="display:none;"></div>
+
+                <div class="ai-modify-bar" id="aiModifyBar" style="display:none;">
+                    <input type="text" class="ai-modify-input" id="aiModifyInput"
+                        placeholder="告诉 AI 怎么修改，例如：把第二章改写得更精简，补充每节的重点…">
+                    <button class="ai-modify-btn" id="aiModifyBtn" onclick="aiModify()">✨ AI 修改</button>
+                </div>
+            </div>
+
+            <!-- Mindmap Pane -->
+            <div class="content-pane" id="mindmap-pane">
+                <div class="empty-state" id="mindmapEmpty">
+                    <div class="empty-icon">🗺️</div>
+                    <div>思维导图将在整理完成后自动生成</div>
+                </div>
+                <div class="mindmap-wrap" id="mindmapWrap" style="display:none;">
+                    <div class="mindmap-toolbar">
+                        <button class="mm-btn" onclick="mmZoom(1.25)">➕ 放大</button>
+                        <button class="mm-btn" onclick="mmZoom(0.8)">➖ 缩小</button>
+                        <button class="mm-btn" onclick="mmFit()">⤢ 适应</button>
+                        <button class="mm-btn" onclick="mmFullscreen()">⛶ 全屏</button>
+                        <div class="tool-divider" style="width:1px; height:20px; background:#E2D9C8; margin:0 0.2rem;"></div>
+                        <button class="mm-btn" onclick="exportMindmap('png')">⬇️ PNG</button>
+                        <button class="mm-btn" onclick="exportMindmap('jpg')">⬇️ JPG</button>
+                        <button class="mm-btn" onclick="exportMindmap('pdf')">⬇️ PDF</button>
+                    </div>
+                    <div class="mindmap-container" id="mindmapContainer">
+                        <svg id="mindmap-svg"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📝 添加笔记</div>
+                <button class="modal-close" onclick="closeNoteModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">笔记标题</label>
+                <input type="text" class="form-input" id="noteTitle" placeholder="例如：我的理解">
+            </div>
+            <div class="form-group">
+                <label class="form-label">笔记内容</label>
+                <textarea class="form-textarea" id="noteContent" placeholder="输入你的想法..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="confirmNote()">插入笔记</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script>
+        // ---------- Global State ----------
+        let selectedFiles = [];
+        let currentJobId = null;
+        let currentSubject = '';
+        let currentMarkdown = '';   // 当前笔记的 markdown 源
+        let mm = null;              // markmap 实例
+
+        const audioExts = ['.mp3','.wav','.m4a','.ogg','.flac'];
+        const docExts   = ['.pdf','.pptx','.docx','.txt','.md','.srt'];
+        const imageExts = ['.jpg','.jpeg','.png','.bmp','.webp'];
+
+        const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+        // 保留高亮 span 和行内笔记，导出时转成 markdown 标记
+        turndown.addRule('highlight', {
+            filter: (node) => node.nodeName === 'SPAN' && /hl-(red|yellow|green|blue)/.test(node.className),
+            replacement: (content, node) => {
+                const color = node.className.match(/hl-(red|yellow|green|blue)/)[1];
+                return `<span class="highlight-${color}">${content}</span>`;
+            }
+        });
+        turndown.addRule('inlineNote', {
+            filter: (node) => node.nodeName === 'DIV' && node.classList.contains('inline-note'),
+            replacement: (content, node) => `\n> 📝 ${node.innerText.replace(/\n+/g, ' ')}\n`
+        });
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        // ---------- File Upload ----------
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        uploadArea.onclick = () => fileInput.click();
+        ['dragenter','dragover','dragleave','drop'].forEach(evt =>
+            uploadArea.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }));
+        uploadArea.addEventListener('drop', e => addFiles(Array.from(e.dataTransfer.files)));
+        fileInput.onchange = () => addFiles(Array.from(fileInput.files));
+
+        function addFiles(files) {
+            selectedFiles = [...selectedFiles, ...files];
+            updateFileDisplay();
+        }
+        function removeFile(index) { selectedFiles.splice(index, 1); updateFileDisplay(); }
+
+        function getFileIcon(name) {
+            const l = name.toLowerCase();
+            if (audioExts.some(e => l.endsWith(e))) return '🎤';
+            if (l.endsWith('.pdf')) return '📕';
+            if (l.endsWith('.pptx')) return '📊';
+            if (l.endsWith('.docx')) return '📄';
+            if (imageExts.some(e => l.endsWith(e))) return '🖼️';
+            return '📄';
+        }
+        function fileItemHtml(f) {
+            const idx = selectedFiles.indexOf(f);
+            return `<div class="file-item"><div class="file-info"><span>${getFileIcon(f.name)}</span>
+                <span class="file-name" title="${f.name}">${f.name}</span></div>
+                <button class="file-action-btn" onclick="removeFile(${idx})">✕</button></div>`;
+        }
+        function updateFileDisplay() {
+            const groups = [
+                { ext: audioExts, cat: 'audioCategory', list: 'audioFiles', count: 'audioCount' },
+                { ext: docExts,   cat: 'docCategory',   list: 'docFiles',   count: 'docCount' },
+                { ext: imageExts, cat: 'imageCategory', list: 'imageFiles', count: 'imageCount' },
+            ];
+            groups.forEach(g => {
+                const files = selectedFiles.filter(f => g.ext.some(e => f.name.toLowerCase().endsWith(e)));
+                const cat = document.getElementById(g.cat);
+                if (files.length) {
+                    cat.style.display = 'block';
+                    document.getElementById(g.count).textContent = files.length;
+                    document.getElementById(g.list).innerHTML = files.map(fileItemHtml).join('');
+                } else {
+                    cat.style.display = 'none';
+                }
+            });
+        }
+
+        // ---------- Processing ----------
+        document.getElementById('processBtn').onclick = async () => {
+            const subject = document.getElementById('subjectInput').value.trim();
+            const outline = document.getElementById('outlineInput').value.trim();
+            if (selectedFiles.length === 0) return toast('请先上传课程文件');
+            if (!subject) return toast('请输入课程名称');
+
+            const btn = document.getElementById('processBtn');
+            btn.disabled = true;
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressFill').style.width = '0%';
+
+            const fd = new FormData();
+            fd.append('subject', subject);
+            fd.append('outline', outline);
+            fd.append('color', window.selectedFolderColor || 'blue');
+            selectedFiles.forEach(f => fd.append('files', f));
+
+            try {
+                const res = await fetch('/process', { method: 'POST', body: fd });
+                const { job_id } = await res.json();
+                currentJobId = job_id;
+                currentSubject = subject;
+                localStorage.setItem('lastCourse', subject);
+                pollStatus(job_id);
+            } catch (err) {
+                toast('上传失败: ' + err.message);
+                btn.disabled = false;
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+        };
+
+        function updateProgress(text) {
+            document.getElementById('progressText').textContent = text;
+            const fill = document.getElementById('progressFill');
+            const w = parseInt(fill.style.width) || 0;
+            if (w < 90) { fill.style.width = (w + 8) + '%'; document.getElementById('progressPercent').textContent = (w + 8) + '%'; }
+        }
+
+        async function pollStatus(jobId) {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/status/${jobId}`);
+                    const data = await res.json();
+                    updateProgress(data.progress || data.status);
+
+                    if (data.status === 'done') {
+                        clearInterval(interval);
+                        document.getElementById('processBtn').disabled = false;
+                        document.getElementById('progressFill').style.width = '100%';
+                        document.getElementById('progressPercent').textContent = '100%';
+                        setTimeout(() => document.getElementById('progressContainer').style.display = 'none', 600);
+
+                        // 调试：打印后端返回的数据
+                        console.log('✅ 整理完成，后端返回数据:', data);
+                        console.log('  notes_md 长度:', data.notes_md ? data.notes_md.length : 'undefined/null');
+                        console.log('  mindmap 长度:', data.mindmap ? data.mindmap.length : 'undefined/null');
+
+                        if (data.notes_md) loadCanvas(data.notes_md);
+                        if (data.mindmap) renderMindmap(data.mindmap);
+                        switchTab('canvas');
+                        loadHistory();
+                        toast('✅ AI 整理完成');
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        document.getElementById('processBtn').disabled = false;
+                        document.getElementById('progressContainer').style.display = 'none';
+                        toast('❌ ' + (data.progress || '处理出错'));
+                    }
+                } catch (err) { console.error('poll error', err); }
+            }, 1000);
+        }
+
+        // ---------- Canvas (editable knowledge area) ----------
+        function loadCanvas(markdownText) {
+            console.log('📝 loadCanvas 被调用，markdown 长度:', markdownText ? markdownText.length : 'null/undefined');
+            console.log('  前 200 字符:', markdownText ? markdownText.substring(0, 200) : '(空)');
+
+            currentMarkdown = markdownText;
+            const canvas = document.getElementById('canvas');
+            canvas.innerHTML = marked.parse(markdownText);
+
+            console.log('  转换后 HTML 长度:', canvas.innerHTML.length);
+            console.log('  canvas 元素:', canvas);
+            console.log('  canvas display:', window.getComputedStyle(canvas).display);
+
+            document.getElementById('canvasEmpty').style.display = 'none';
+            canvas.style.display = 'block';
+            document.getElementById('editorToolbar').style.display = 'flex';
+            document.getElementById('aiModifyBar').style.display = 'flex';
+
+            console.log('  设置后 canvas display:', window.getComputedStyle(canvas).display);
+        }
+
+        // 从画布读取最新内容（含手动编辑）转回 markdown
+        function canvasToMarkdown() {
+            const canvas = document.getElementById('canvas');
+            return turndown.turndown(canvas.innerHTML);
+        }
+
+        // 富文本格式：加粗/斜体/下划线
+        function fmt(cmd) {
+            document.execCommand(cmd, false, null);
+            document.getElementById('canvas').focus();
+        }
+
+        // 高亮：用选中文本包裹 span
+        function hl(color) {
+            const sel = window.getSelection();
+            if (!sel.rangeCount || sel.isCollapsed) return toast('请先选中要高亮的文字');
+            const range = sel.getRangeAt(0);
+            const span = document.createElement('span');
+            span.className = 'hl-' + color;
+            try {
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
+                sel.removeAllRanges();
+            } catch (e) { toast('高亮失败，请重新选择'); }
+        }
+
+        // 添加行内笔记
+        let savedRange = null;
+        function addInlineNote() {
+            const sel = window.getSelection();
+            savedRange = sel.rangeCount ? sel.getRangeAt(0) : null;
+            document.getElementById('noteModal').classList.add('active');
+        }
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.remove('active');
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+        }
+        function confirmNote() {
+            const title = document.getElementById('noteTitle').value.trim() || '我的笔记';
+            const content = document.getElementById('noteContent').value.trim();
+            if (!content) return toast('请输入笔记内容');
+
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'inline-note';
+            noteDiv.contentEditable = 'false';
+            noteDiv.innerHTML = `<div class="note-label">📝 ${title}</div>${content}`;
+
+            const canvas = document.getElementById('canvas');
+            if (savedRange && canvas.contains(savedRange.commonAncestorContainer)) {
+                savedRange.collapse(false);
+                savedRange.insertNode(noteDiv);
+            } else {
+                canvas.appendChild(noteDiv);
+            }
+            closeNoteModal();
+            toast('已插入笔记');
+        }
+
+        // ---------- AI 修改 ----------
+        async function aiModify() {
+            const instruction = document.getElementById('aiModifyInput').value.trim();
+            if (!instruction) return toast('请输入修改要求');
+            const btn = document.getElementById('aiModifyBtn');
+            btn.disabled = true;
+            btn.textContent = '✨ AI 修改中...';
+
+            try {
+                const notes_md = canvasToMarkdown();
+                const res = await fetch('/api/refine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes_md, instruction })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                loadCanvas(data.notes_md);
+                document.getElementById('aiModifyInput').value = '';
+                toast('✅ AI 已按要求修改');
+            } catch (err) {
+                toast('修改失败: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ AI 修改';
+            }
+        }
+        document.getElementById('aiModifyInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') aiModify();
+        });
+
+        // ---------- 导出 Word ----------
+        async function exportWord() {
+            const notes_md = canvasToMarkdown();
+            if (!notes_md.trim()) return toast('暂无内容可导出');
+            toast('正在生成 Word...');
+            try {
+                const res = await fetch('/api/export/docx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes_md, subject: currentSubject || '课程笔记' })
+                });
+                if (!res.ok) throw new Error('导出失败');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = (currentSubject || '课程笔记') + '.docx';
+                a.click();
+                URL.revokeObjectURL(url);
+                toast('✅ Word 已导出');
+            } catch (err) {
+                toast('导出失败: ' + err.message);
+            }
+        }
+
+        // ---------- Mindmap ----------
+        let currentMindmapMd = '';
+        function renderMindmap(mindmapMd) {
+            if (!mindmapMd || !window.markmap) return;
+            currentMindmapMd = mindmapMd;
+            document.getElementById('mindmapEmpty').style.display = 'none';
+            document.getElementById('mindmapWrap').style.display = 'flex';
+            try {
+                const { Markmap, Transformer } = window.markmap;
+                const transformer = new Transformer();
+                const { root } = transformer.transform(mindmapMd);
+                const svg = document.getElementById('mindmap-svg');
+                svg.innerHTML = '';
+                if (mm) mm.destroy && mm.destroy();
+                mm = Markmap.create(svg, { autoFit: true, pan: true, zoom: true }, root);
+            } catch (err) {
+                console.error('mindmap error', err);
+                document.getElementById('mindmapWrap').innerHTML =
+                    `<div class="empty-state">思维导图渲染失败: ${err.message}</div>`;
+            }
+        }
+        function mmZoom(factor) {
+            if (mm) mm.rescale(factor);
+        }
+        function mmFit() { if (mm) mm.fit(); }
+        function mmFullscreen() {
+            const el = document.getElementById('mindmapContainer');
+            if (!document.fullscreenElement) {
+                el.requestFullscreen && el.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 导出思维导图为 PNG / JPG / PDF
+        function exportMindmap(format) {
+            const svg = document.getElementById('mindmap-svg');
+            if (!svg || !currentMindmapMd) return toast('暂无思维导图可导出');
+
+            const clone = svg.cloneNode(true);
+            const bbox = svg.getBoundingClientRect();
+            const w = Math.max(bbox.width, 800), h = Math.max(bbox.height, 600);
+            clone.setAttribute('width', w);
+            clone.setAttribute('height', h);
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', w); rect.setAttribute('height', h);
+            rect.setAttribute('fill', format === 'png' ? 'transparent' : '#FFFFFF');
+            clone.insertBefore(rect, clone.firstChild);
+
+            const xml = new XMLSerializer().serializeToString(clone);
+            const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
+            const img = new Image();
+            img.onload = () => {
+                const scale = 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = w * scale; canvas.height = h * scale;
+                const ctx = canvas.getContext('2d');
+                if (format !== 'png') { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                const name = (currentSubject || '思维导图');
+                if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: w > h ? 'l' : 'p', unit: 'px', format: [w, h] });
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, w, h);
+                    pdf.save(`${name}-思维导图.pdf`);
+                } else {
+                    const a = document.createElement('a');
+                    a.download = `${name}-思维导图.${format}`;
+                    a.href = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 0.95);
+                    a.click();
+                }
+                toast('✅ 已导出 ' + format.toUpperCase());
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); toast('导出失败，请重试'); };
+            img.src = url;
+        }
+
+        // ---------- Tabs ----------
+        function switchTab(name) {
+            document.querySelectorAll('.content-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+            document.querySelectorAll('.content-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById(name + '-pane').classList.add('active');
+            if (name === 'mindmap' && mm) setTimeout(() => mm.fit(), 100);
+        }
+        document.querySelectorAll('.content-tab').forEach(tab => {
+            tab.onclick = () => switchTab(tab.dataset.tab);
+        });
+
+        // ---------- History ----------
+        async function loadHistory() {
+            const subject = document.getElementById('subjectInput').value.trim() || localStorage.getItem('lastCourse');
+            console.log('📜 loadHistory 被调用，课程名:', subject);
+            if (!subject) return;
+            try {
+                const res = await fetch(`/api/courses/${encodeURIComponent(subject)}/history`);
+                const data = await res.json();
+                console.log('  历史记录 API 返回:', data);
+                displayHistory(data.sessions || []);
+            } catch (err) {
+                console.error('❌ 历史记录加载失败:', err);
+            }
+        }
+        function displayHistory(sessions) {
+            console.log('📜 displayHistory 被调用，记录数:', sessions.length);
+            const list = document.getElementById('historyList');
+            if (!sessions.length) {
+                list.innerHTML = '<div style="color:#8A8A80; font-size:0.85rem; text-align:center; padding:1rem;">暂无历史记录</div>';
+                return;
+            }
+            list.innerHTML = sessions.slice(0, 10).map(item =>
+                `<div class="history-item">
+                    <div class="history-main" onclick="loadHistoryItem('${item.id}')" style="cursor:pointer;">
+                        <div class="history-subject">${item.title}</div>
+                        <div class="history-time">${new Date(item.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                    <div class="history-acts">
+                        <span class="hist-act" title="查看" onclick="loadHistoryItem('${item.id}')">👁️</span>
+                        <span class="hist-act" title="删除" onclick="deleteHistory('${item.id}', event)">🗑️</span>
+                    </div>
+                </div>`).join('');
+            console.log('  历史记录已渲染到页面');
+        }
+        async function deleteHistory(sessionId, ev) {
+            ev && ev.stopPropagation();
+            if (!confirm('确定删除这条整理记录吗？此操作无法恢复。')) return;
+            await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
+            toast('已删除');
+            loadHistory();
+        }
+        async function loadHistoryItem(sessionId) {
+            try {
+                const res = await fetch(`/api/session/${sessionId}/detail`);
+                const session = await res.json();
+                currentJobId = sessionId;
+                currentSubject = session.title || '';
+                if (session.notes_md) loadCanvas(session.notes_md);
+                if (session.mindmap_md) renderMindmap(session.mindmap_md);
+                switchTab('canvas');
+                toast('已加载：' + session.title);
+            } catch (err) { toast('加载失败: ' + err.message); }
+        }
+
+        // ---------- 课程文件夹选择 ----------
+        const FOLDER_COLORS = { blue:'#4A90D9', green:'#4CAF82', yellow:'#E5B53A', orange:'#E08A3C', red:'#D9534F', purple:'#9B6FD0', gray:'#6B6B66' };
+        window.selectedFolderColor = 'blue';
+        let allFolders = [];
+
+        async function loadFolders() {
+            try {
+                const res = await fetch('/api/courses');
+                const data = await res.json();
+                allFolders = data.courses || [];
+                const sel = document.getElementById('folderSelect');
+                const opts = allFolders.map(c =>
+                    `<option value="${c.id}" data-name="${escapeAttr(c.name)}" data-color="${c.color}">${escapeAttr(c.name)}</option>`).join('');
+                sel.innerHTML = opts + '<option value="__new__">＋ 新建课程文件夹</option>';
+                // 默认选中上次课程（若存在）
+                const last = localStorage.getItem('lastCourse');
+                const match = allFolders.find(c => c.name === last);
+                if (match) { sel.value = String(match.id); onFolderChange(); }
+            } catch (e) { console.error('加载文件夹失败', e); }
+        }
+
+        function onFolderChange() {
+            const sel = document.getElementById('folderSelect');
+            const subjectInput = document.getElementById('subjectInput');
+            if (sel.value === '__new__') {
+                window.selectedFolderColor = 'blue';
+                subjectInput.value = '';
+                subjectInput.readOnly = false;
+                subjectInput.placeholder = '输入新课程名称，如：基础写作 - 第五讲';
+            } else {
+                const opt = sel.selectedOptions[0];
+                window.selectedFolderColor = opt.dataset.color || 'blue';
+                subjectInput.value = opt.dataset.name || '';
+            }
+        }
+
+        function escapeAttr(s) { return (s || '').replace(/"/g, '&quot;'); }
+
+        // ---------- Init ----------
+        async function loadLatestResult() {
+            await loadFolders();
+            const lastCourse = localStorage.getItem('lastCourse');
+            if (!lastCourse) return;
+            if (!document.getElementById('subjectInput').value)
+                document.getElementById('subjectInput').value = lastCourse;
+            try {
+                const res = await fetch(`/api/courses/${encodeURIComponent(lastCourse)}/history`);
+                const data = await res.json();
+                if (data.sessions && data.sessions.length) {
+                    displayHistory(data.sessions);
+                    await loadHistoryItem(data.sessions[0].id);
+                }
+            } catch (err) { console.error('init error', err); }
+        }
+        document.addEventListener('DOMContentLoaded', loadLatestResult);
+    </script>
+</body>
+</html>

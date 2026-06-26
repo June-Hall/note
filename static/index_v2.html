@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesAI - 课程笔记AI整理平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F6F1E8;
+            color: #1F2421;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(251, 247, 239, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #E2D9C8;
+            padding: 1rem 2rem;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #C8853F;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #1F2421;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #C8853F;
+        }
+
+        /* Three Column Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 100%;
+            height: calc(100vh - 70px);
+        }
+
+        /* Column Styles */
+        .column {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(31, 36, 33, 0.06);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid #E2D9C8;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            background: #F0E3D0;
+            color: #C8853F;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+        }
+
+        /* Left Column - Upload Area */
+        .upload-area {
+            border: 2px dashed #E2D9C8;
+            border-radius: 0.75rem;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #FBF7EF;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            border-color: #C8853F;
+            background: #F0E3D0;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1F2421;
+        }
+
+        .upload-hint {
+            font-size: 0.8rem;
+            color: #8A8A80;
+            margin-top: 0.3rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* File List with Categories */
+        .file-category {
+            margin-bottom: 1rem;
+        }
+
+        .category-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #8A8A80;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-count {
+            background: #F0E3D0;
+            color: #C8853F;
+            padding: 0.1rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+        }
+
+        .file-item {
+            background: #FBF7EF;
+            padding: 0.7rem 0.9rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            border: 1px solid #E2D9C8;
+            transition: all 0.2s;
+        }
+
+        .file-item:hover {
+            background: #F0E3D0;
+            transform: translateX(2px);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .file-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .file-action-btn {
+            background: none;
+            border: none;
+            color: #C8853F;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.2rem;
+            transition: color 0.2s;
+        }
+
+        .file-action-btn:hover {
+            color: #A86B2C;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1F2421;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.7rem 0.9rem;
+            border: 2px solid #E2D9C8;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #C8853F;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.6rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #C8853F;
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #A86B2C;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(200, 133, 63, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #8A8A80;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #FBF7EF;
+            color: #C8853F;
+            border: 1px solid #E2D9C8;
+        }
+
+        .btn-secondary:hover {
+            background: #F0E3D0;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .progress-label {
+            font-size: 0.85rem;
+            color: #1F2421;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #E2D9C8;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #C8853F, #A86B2C);
+            border-radius: 1rem;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* History Items */
+        .history-list {
+            margin-top: 1rem;
+        }
+
+        .history-item {
+            background: #FBF7EF;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            border-left: 3px solid #C8853F;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: #F0E3D0;
+            transform: translateX(3px);
+        }
+
+        .history-subject {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin-bottom: 0.3rem;
+        }
+
+        .history-time {
+            font-size: 0.75rem;
+            color: #8A8A80;
+        }
+
+        /* Middle Column - Content Display */
+        .content-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #E2D9C8;
+        }
+
+        .content-tab {
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #8A8A80;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .content-tab:hover {
+            color: #C8853F;
+        }
+
+        .content-tab.active {
+            color: #C8853F;
+            border-bottom-color: #C8853F;
+            font-weight: 600;
+        }
+
+        .content-pane {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .content-pane.active {
+            display: block;
+        }
+
+        /* Knowledge Point Cards */
+        .knowledge-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1F2421;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #E2D9C8;
+        }
+
+        .knowledge-card {
+            background: #FBF7EF;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #E2D9C8;
+            transition: all 0.2s;
+        }
+
+        .knowledge-card:hover {
+            box-shadow: 0 4px 12px rgba(31, 36, 33, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .knowledge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .knowledge-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1F2421;
+            flex: 1;
+        }
+
+        .knowledge-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 0.3rem 0.7rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .tag-teacher {
+            background: #ffebee;
+            color: #c0392b;
+        }
+
+        .tag-exam {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .tag-important {
+            background: #fff9e6;
+            color: #f39c12;
+        }
+
+        .knowledge-content {
+            color: #1F2421;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .knowledge-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            background: #FFFFFF;
+            border: 1px solid #E2D9C8;
+            border-radius: 0.4rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #F0E3D0;
+            border-color: #C8853F;
+        }
+
+        /* Notes Section */
+        .note-item {
+            background: #FFFFFF;
+            border-left: 3px solid #C8853F;
+            padding: 1rem;
+            margin: 0.8rem 0;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(31, 36, 33, 0.06);
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #C8853F;
+        }
+
+        .note-time {
+            font-size: 0.7rem;
+            color: #8A8A80;
+        }
+
+        .note-content {
+            font-size: 0.9rem;
+            color: #1F2421;
+            line-height: 1.6;
+        }
+
+        /* Mindmap Container */
+        .mindmap-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #E2D9C8;
+            border-radius: 0.75rem;
+            background: #FBF7EF;
+        }
+
+        /* Coverage Analysis */
+        .coverage-card {
+            background: #FBF7EF;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .coverage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .coverage-title {
+            font-weight: 600;
+            color: #1F2421;
+        }
+
+        .coverage-rate {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #C8853F;
+        }
+
+        .coverage-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .coverage-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .coverage-item.covered {
+            color: #27ae60;
+        }
+
+        .coverage-item.missing {
+            color: #e74c3c;
+        }
+
+        /* Right Column - AI Chat */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-message {
+            padding: 0.8rem 1rem;
+            border-radius: 0.75rem;
+            max-width: 90%;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user {
+            background: #C8853F;
+            color: #FFFFFF;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .chat-message.ai {
+            background: #FBF7EF;
+            color: #1F2421;
+            border: 1px solid #E2D9C8;
+            align-self: flex-start;
+        }
+
+        .chat-message.system {
+            background: #F0E3D0;
+            color: #8A8A80;
+            font-size: 0.85rem;
+            text-align: center;
+            align-self: center;
+            font-style: italic;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 2px solid #E2D9C8;
+            border-radius: 0.6rem;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            resize: none;
+            min-height: 60px;
+            max-height: 120px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #C8853F;
+        }
+
+        .chat-send-btn {
+            padding: 0.8rem 1.2rem;
+            background: #C8853F;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 0.6rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .chat-send-btn:hover {
+            background: #A86B2C;
+        }
+
+        /* AI Features Section */
+        .ai-features {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #E2D9C8;
+        }
+
+        .feature-btn {
+            width: 100%;
+            padding: 0.7rem;
+            margin-bottom: 0.5rem;
+            background: #FBF7EF;
+            border: 1px solid #E2D9C8;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .feature-btn:hover {
+            background: #F0E3D0;
+            border-color: #C8853F;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(31, 36, 33, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(31, 36, 33, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1F2421;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #8A8A80;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #C8853F;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #8A8A80;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-text {
+            font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .workspace {
+                grid-template-columns: 320px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .column {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <div class="logo">NotesAI</div>
+            <ul class="nav-links">
+                <li><a href="#upload">开始整理</a></li>
+                <li><a href="#workspace">工作区</a></li>
+                <li><a href="#knowledge">知识库</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Three Column Workspace -->
+    <div class="workspace">
+        <!-- Left Column: Upload & Materials -->
+        <div class="column">
+            <span class="eyebrow">🎓 AI驱动</span>
+            <h2 class="column-header">课程资料</h2>
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text">拖拽或点击上传</div>
+                <div class="upload-hint">支持批量上传</div>
+                <input type="file" id="fileInput" multiple
+                    accept=".mp3,.wav,.m4a,.ogg,.flac,.jpg,.jpeg,.png,.bmp,.webp,.pdf,.pptx,.docx,.txt,.md,.srt">
+            </div>
+
+            <!-- File Categories -->
+            <div id="fileCategories">
+                <!-- Audio Files -->
+                <div class="file-category" id="audioCategory" style="display: none;">
+                    <div class="category-title">
+                        🎤 音频文件
+                        <span class="file-count" id="audioCount">0</span>
+                    </div>
+                    <div id="audioFiles"></div>
+                </div>
+
+                <!-- Documents -->
+                <div class="file-category" id="docCategory" style="display: none;">
+                    <div class="category-title">
+                        📄 文档课件
+                        <span class="file-count" id="docCount">0</span>
+                    </div>
+                    <div id="docFiles"></div>
+                </div>
+
+                <!-- Images -->
+                <div class="file-category" id="imageCategory" style="display: none;">
+                    <div class="category-title">
+                        🖼️ 图片截图
+                        <span class="file-count" id="imageCount">0</span>
+                    </div>
+                    <div id="imageFiles"></div>
+                </div>
+            </div>
+
+            <!-- Course Info -->
+            <div class="form-group">
+                <label class="form-label">课程名称</label>
+                <input type="text" class="form-input" id="subjectInput"
+                    placeholder="例如：基础写作 - 第五讲">
+            </div>
+
+            <!-- Outline Input -->
+            <div class="form-group">
+                <label class="form-label">教师提纲与考试重点</label>
+                <textarea class="form-textarea" id="outlineInput"
+                    placeholder="输入老师的课程提纲、考试范围...&#10;&#10;例如：&#10;第一章 汉字起源&#10;重点：甲骨文、金文&#10;考试范围：第一至第三章"></textarea>
+            </div>
+
+            <!-- Process Button -->
+            <button class="btn btn-primary" id="processBtn">🚀 开始AI整理</button>
+
+            <!-- Progress -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-label">
+                    <span id="progressText">处理中...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #E2D9C8;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: #8A8A80; margin-bottom: 0.8rem;">
+                    📜 历史记录
+                </div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </div>
+
+        <!-- Middle Column: Content Display -->
+        <div class="column">
+            <h2 class="column-header">知识工作区</h2>
+
+            <!-- Tabs -->
+            <div class="content-tabs">
+                <div class="content-tab active" data-tab="knowledge">📚 知识总结</div>
+                <div class="content-tab" data-tab="mindmap">🗺️ 思维导图</div>
+                <div class="content-tab" data-tab="coverage">📊 提纲匹配</div>
+                <div class="content-tab" data-tab="exam">📝 考试模式</div>
+            </div>
+
+            <!-- Knowledge Summary Pane -->
+            <div class="content-pane active" id="knowledge-pane">
+                <div class="empty-state" id="knowledgeEmpty">
+                    <div class="empty-icon">📚</div>
+                    <div class="empty-text">上传课程资料并开始整理后，AI生成的知识点将显示在这里</div>
+                </div>
+                <div id="knowledgeContent" style="display: none;"></div>
+            </div>
+
+            <!-- Mindmap Pane -->
+            <div class="content-pane" id="mindmap-pane">
+                <div class="empty-state" id="mindmapEmpty">
+                    <div class="empty-icon">🗺️</div>
+                    <div class="empty-text">思维导图将在整理完成后自动生成</div>
+                </div>
+                <div id="mindmapContent" style="display: none;">
+                    <div class="mindmap-container">
+                        <svg id="mindmap-svg" style="width: 100%; height: 100%;"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coverage Analysis Pane -->
+            <div class="content-pane" id="coverage-pane">
+                <div class="empty-state" id="coverageEmpty">
+                    <div class="empty-icon">📊</div>
+                    <div class="empty-text">输入教师提纲后，将显示覆盖率分析</div>
+                </div>
+                <div id="coverageContent" style="display: none;"></div>
+            </div>
+
+            <!-- Exam Mode Pane -->
+            <div class="content-pane" id="exam-pane">
+                <div class="empty-state">
+                    <div class="empty-icon">📝</div>
+                    <div class="empty-text">AI考试模式将根据课程内容自动生成练习题</div>
+                </div>
+                <div id="examContent" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Right Column: AI Assistant -->
+        <div class="column">
+            <h2 class="column-header">AI助手</h2>
+
+            <div class="chat-container">
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message system">
+                        👋 你好！我是AI助手，随时为你解答课程相关问题
+                    </div>
+                </div>
+
+                <!-- AI Features -->
+                <div class="ai-features">
+                    <button class="feature-btn" onclick="quickAction('总结本次课程重点')">
+                        📌 总结课程重点
+                    </button>
+                    <button class="feature-btn" onclick="quickAction('生成思维导图')">
+                        🗺️ 生成思维导图
+                    </button>
+                    <button class="feature-btn" onclick="quickAction('生成考试题目')">
+                        📝 生成考试题目
+                    </button>
+                    <button class="feature-btn" onclick="quickAction('生成复习卡片')">
+                        🎴 生成复习卡片
+                    </button>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <textarea class="chat-input" id="chatInput"
+                        placeholder="向AI提问..."></textarea>
+                    <button class="chat-send-btn" id="chatSendBtn" onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📝 添加批注</h3>
+                <button class="modal-close" onclick="closeNoteModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">批注标题</label>
+                <input type="text" class="form-input" id="noteTitle" placeholder="例如：我的理解">
+            </div>
+            <div class="form-group">
+                <label class="form-label">批注内容</label>
+                <textarea class="form-textarea" id="noteContent" rows="6"
+                    placeholder="输入你的笔记或想法..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">标签</label>
+                <input type="text" class="form-input" id="noteTags" placeholder="用逗号分隔，例如：重点,待复习">
+            </div>
+            <button class="btn btn-primary" onclick="saveNote()">保存批注</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+    <script>
+        // Global State
+        let selectedFiles = [];
+        let currentJobId = null;
+        let knowledgePoints = [];
+        let currentEditingPoint = null;
+
+        // File Categories
+        const audioExts = ['.mp3', '.wav', '.m4a', '.ogg', '.flac'];
+        const docExts = ['.pdf', '.pptx', '.docx', '.txt', '.md', '.srt'];
+        const imageExts = ['.jpg', '.jpeg', '.png', '.bmp', '.webp'];
+
+        // File Upload Handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.onclick = () => fileInput.click();
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            uploadArea.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        uploadArea.addEventListener('drop', e => {
+            const files = Array.from(e.dataTransfer.files);
+            addFiles(files);
+        });
+
+        fileInput.onchange = () => {
+            const files = Array.from(fileInput.files);
+            addFiles(files);
+        };
+
+        function addFiles(files) {
+            selectedFiles = [...selectedFiles, ...files];
+            updateFileDisplay();
+        }
+
+        function updateFileDisplay() {
+            const audioFiles = selectedFiles.filter(f => audioExts.some(ext => f.name.toLowerCase().endsWith(ext)));
+            const docFiles = selectedFiles.filter(f => docExts.some(ext => f.name.toLowerCase().endsWith(ext)));
+            const imageFiles = selectedFiles.filter(f => imageExts.some(ext => f.name.toLowerCase().endsWith(ext)));
+
+            // Audio Category
+            const audioCategory = document.getElementById('audioCategory');
+            const audioFilesDiv = document.getElementById('audioFiles');
+            const audioCount = document.getElementById('audioCount');
+            if (audioFiles.length > 0) {
+                audioCategory.style.display = 'block';
+                audioCount.textContent = audioFiles.length;
+                audioFilesDiv.innerHTML = audioFiles.map((f, i) =>
+                    createFileItem(f, selectedFiles.indexOf(f))
+                ).join('');
+            } else {
+                audioCategory.style.display = 'none';
+            }
+
+            // Document Category
+            const docCategory = document.getElementById('docCategory');
+            const docFilesDiv = document.getElementById('docFiles');
+            const docCount = document.getElementById('docCount');
+            if (docFiles.length > 0) {
+                docCategory.style.display = 'block';
+                docCount.textContent = docFiles.length;
+                docFilesDiv.innerHTML = docFiles.map((f, i) =>
+                    createFileItem(f, selectedFiles.indexOf(f))
+                ).join('');
+            } else {
+                docCategory.style.display = 'none';
+            }
+
+            // Image Category
+            const imageCategory = document.getElementById('imageCategory');
+            const imageFilesDiv = document.getElementById('imageFiles');
+            const imageCount = document.getElementById('imageCount');
+            if (imageFiles.length > 0) {
+                imageCategory.style.display = 'block';
+                imageCount.textContent = imageFiles.length;
+                imageFilesDiv.innerHTML = imageFiles.map((f, i) =>
+                    createFileItem(f, selectedFiles.indexOf(f))
+                ).join('');
+            } else {
+                imageCategory.style.display = 'none';
+            }
+        }
+
+        function createFileItem(file, index) {
+            const icon = getFileIcon(file.name);
+            return `
+                <div class="file-item">
+                    <div class="file-info">
+                        <span>${icon}</span>
+                        <span class="file-name" title="${file.name}">${file.name}</span>
+                    </div>
+                    <div class="file-actions">
+                        <button class="file-action-btn" onclick="removeFile(${index})" title="删除">✕</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFileIcon(filename) {
+            const lower = filename.toLowerCase();
+            if (audioExts.some(ext => lower.endsWith(ext))) return '🎤';
+            if (lower.endsWith('.pdf')) return '📕';
+            if (lower.endsWith('.pptx')) return '📊';
+            if (lower.endsWith('.docx')) return '📄';
+            if (imageExts.some(ext => lower.endsWith(ext))) return '🖼️';
+            return '📄';
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileDisplay();
+        }
+
+        // Process Button
+        document.getElementById('processBtn').onclick = async () => {
+            const subject = document.getElementById('subjectInput').value.trim();
+            const outline = document.getElementById('outlineInput').value.trim();
+
+            if (selectedFiles.length === 0) {
+                alert('请先上传课程文件');
+                return;
+            }
+
+            if (!subject) {
+                alert('请输入课程名称');
+                return;
+            }
+
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.style.display = 'block';
+
+            addChatMessage('system', `开始处理 ${selectedFiles.length} 个文件...`);
+
+            const formData = new FormData();
+            formData.append('subject', subject);
+            formData.append('outline', outline);
+            selectedFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const res = await fetch('/process', { method: 'POST', body: formData });
+                const { job_id } = await res.json();
+                currentJobId = job_id;
+                pollStatus(job_id);
+            } catch (err) {
+                alert('上传失败: ' + err.message);
+                processBtn.disabled = false;
+                progressContainer.style.display = 'none';
+            }
+        };
+
+        // Poll Processing Status
+        async function pollStatus(jobId) {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/status/${jobId}`);
+                    const data = await res.json();
+
+                    // Update progress
+                    updateProgress(data.progress || data.status);
+
+                    if (data.status === 'done') {
+                        clearInterval(interval);
+                        document.getElementById('processBtn').disabled = false;
+                        document.getElementById('progressContainer').style.display = 'none';
+
+                        // Display results
+                        displayResults(data);
+                        addChatMessage('system', '✅ AI整理完成！');
+
+                        // Load history
+                        loadHistory();
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        document.getElementById('processBtn').disabled = false;
+                        document.getElementById('progressContainer').style.display = 'none';
+                        addChatMessage('system', '❌ 处理出错');
+                    }
+                } catch (err) {
+                    console.error('Poll error:', err);
+                }
+            }, 1000);
+        }
+
+        function updateProgress(text) {
+            document.getElementById('progressText').textContent = text;
+
+            // Simulate progress percentage
+            const progressFill = document.getElementById('progressFill');
+            const currentWidth = parseInt(progressFill.style.width) || 0;
+            if (currentWidth < 90) {
+                progressFill.style.width = (currentWidth + 5) + '%';
+                document.getElementById('progressPercent').textContent = (currentWidth + 5) + '%';
+            }
+        }
+
+        function displayResults(data) {
+            // Display knowledge points
+            if (data.notes_md) {
+                displayKnowledge(data.notes_md);
+            }
+
+            // Display mindmap
+            if (data.mindmap) {
+                displayMindmap(data.mindmap);
+            }
+
+            // Add download buttons to chat
+            if (data.files && data.files.length > 0) {
+                let downloadMsg = '📥 导出文件：<br>';
+                data.files.forEach(f => {
+                    downloadMsg += `<a href="/download/${currentJobId}/${f.name}" download style="color: #C8853F; text-decoration: underline;">${f.label}</a><br>`;
+                });
+                addChatMessage('ai', downloadMsg);
+            }
+        }
+
+        function displayKnowledge(notesMarkdown) {
+            document.getElementById('knowledgeEmpty').style.display = 'none';
+            const knowledgeContent = document.getElementById('knowledgeContent');
+            knowledgeContent.style.display = 'block';
+
+            // Parse markdown and create knowledge cards
+            const sections = parseMarkdownSections(notesMarkdown);
+            knowledgePoints = sections;
+
+            knowledgeContent.innerHTML = sections.map((section, idx) => `
+                <div class="knowledge-card" data-index="${idx}">
+                    <div class="knowledge-header">
+                        <div class="knowledge-title">${section.title}</div>
+                        <div class="knowledge-tags">
+                            ${section.isTeacher ? '<span class="tag tag-teacher">🔴 教师重点</span>' : ''}
+                            ${section.isExam ? '<span class="tag tag-exam">🔵 考试范围</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="knowledge-content">${marked.parse(section.content)}</div>
+                    <div class="knowledge-actions">
+                        <button class="action-btn" onclick="editKnowledge(${idx})">✏️ 编辑</button>
+                        <button class="action-btn" onclick="addNoteToKnowledge(${idx})">📝 添加Note</button>
+                        <button class="action-btn" onclick="highlightKnowledge(${idx})">🟡 高亮</button>
+                    </div>
+                    <div id="notes-${idx}" class="notes-container"></div>
+                </div>
+            `).join('');
+        }
+
+        function parseMarkdownSections(markdown) {
+            const lines = markdown.split('\n');
+            const sections = [];
+            let currentSection = null;
+
+            lines.forEach(line => {
+                if (line.startsWith('## ')) {
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+                    currentSection = {
+                        title: line.replace('## ', '').trim(),
+                        content: '',
+                        isTeacher: false,
+                        isExam: false,
+                        notes: []
+                    };
+                } else if (currentSection) {
+                    currentSection.content += line + '\n';
+
+                    // Detect teacher/exam markers
+                    if (line.includes('【教师重点】') || line.includes('🔴')) {
+                        currentSection.isTeacher = true;
+                    }
+                    if (line.includes('【考试范围】') || line.includes('🔵')) {
+                        currentSection.isExam = true;
+                    }
+                }
+            });
+
+            if (currentSection) {
+                sections.push(currentSection);
+            }
+
+            return sections;
+        }
+
+        function displayMindmap(mindmapMarkdown) {
+            document.getElementById('mindmapEmpty').style.display = 'none';
+            const mindmapContent = document.getElementById('mindmapContent');
+            mindmapContent.style.display = 'block';
+
+            try {
+                const { Markmap, Transformer } = window.markmap;
+                const transformer = new Transformer();
+                const { root } = transformer.transform(mindmapMarkdown);
+                Markmap.create('#mindmap-svg', null, root);
+            } catch (err) {
+                console.error('Mindmap render error:', err);
+            }
+        }
+
+        // Tab Switching
+        document.querySelectorAll('.content-tab').forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll('.content-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.content-pane').forEach(p => p.classList.remove('active'));
+
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.getElementById(tabName + '-pane').classList.add('active');
+            };
+        });
+
+        // Knowledge Actions
+        function editKnowledge(index) {
+            const point = knowledgePoints[index];
+            const newContent = prompt('编辑内容：', point.content);
+            if (newContent !== null) {
+                point.content = newContent;
+                displayKnowledge(generateMarkdownFromPoints());
+            }
+        }
+
+        function addNoteToKnowledge(index) {
+            currentEditingPoint = index;
+            document.getElementById('noteModal').classList.add('active');
+        }
+
+        function highlightKnowledge(index) {
+            const card = document.querySelector(`.knowledge-card[data-index="${index}"]`);
+            card.style.background = '#fff9e6';
+            setTimeout(() => {
+                card.style.background = '#FBF7EF';
+            }, 2000);
+        }
+
+        // Note Modal
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.remove('active');
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+            document.getElementById('noteTags').value = '';
+        }
+
+        function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+            const tags = document.getElementById('noteTags').value.trim();
+
+            if (!content) {
+                alert('请输入批注内容');
+                return;
+            }
+
+            if (currentEditingPoint !== null) {
+                const note = {
+                    title: title || '我的批注',
+                    content: content,
+                    tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                    timestamp: new Date().toLocaleString('zh-CN')
+                };
+
+                if (!knowledgePoints[currentEditingPoint].notes) {
+                    knowledgePoints[currentEditingPoint].notes = [];
+                }
+                knowledgePoints[currentEditingPoint].notes.push(note);
+
+                // Display note
+                const notesContainer = document.getElementById(`notes-${currentEditingPoint}`);
+                notesContainer.innerHTML += `
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span class="note-label">📝 ${note.title}</span>
+                            <span class="note-time">${note.timestamp}</span>
+                        </div>
+                        <div class="note-content">${note.content}</div>
+                    </div>
+                `;
+
+                closeNoteModal();
+                addChatMessage('system', `已添加批注到知识点 "${knowledgePoints[currentEditingPoint].title}"`);
+            }
+        }
+
+        function generateMarkdownFromPoints() {
+            return knowledgePoints.map(p => `## ${p.title}\n\n${p.content}`).join('\n\n');
+        }
+
+        // Chat Functions
+        function addChatMessage(type, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            messageDiv.innerHTML = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+
+            if (!message) return;
+
+            addChatMessage('user', message);
+            chatInput.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                const response = getAIResponse(message);
+                addChatMessage('ai', response);
+            }, 500);
+        }
+
+        function getAIResponse(message) {
+            const lowerMsg = message.toLowerCase();
+
+            if (lowerMsg.includes('重点') || lowerMsg.includes('总结')) {
+                return '根据课程内容，主要重点包括：\n1. 核心概念和定义\n2. 重要理论和方法\n3. 实际应用案例\n\n建议重点复习标记为🔴的知识点。';
+            } else if (lowerMsg.includes('思维导图')) {
+                return '已为你生成思维导图，请切换到"🗺️ 思维导图"标签页查看。';
+            } else if (lowerMsg.includes('考试') || lowerMsg.includes('题目')) {
+                return '正在生成考试题目...\n\n【选择题】\n1. 以下关于XXX的描述，正确的是？\nA. ...\nB. ...\nC. ...\nD. ...';
+            } else if (lowerMsg.includes('复习')) {
+                return '建议的复习顺序：\n1. 先复习教师强调的重点内容（🔴标记）\n2. 掌握考试范围内的知识点（🔵标记）\n3. 复习补充知识和案例\n4. 完成练习题巩固';
+            } else {
+                return '我理解你的问题了。基于当前课程内容，建议你重点关注核心概念和教师强调的知识点。如有具体问题，欢迎继续提问！';
+            }
+        }
+
+        function quickAction(action) {
+            addChatMessage('user', action);
+            setTimeout(() => {
+                const response = getAIResponse(action);
+                addChatMessage('ai', response);
+            }, 500);
+        }
+
+        // Chat input enter key
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // History Functions
+        async function loadHistory() {
+            const subject = document.getElementById('subjectInput').value.trim();
+            if (!subject) return;
+
+            try {
+                const res = await fetch(`/api/courses/${encodeURIComponent(subject)}/history`);
+                const data = await res.json();
+                displayHistory(data.sessions || []);
+            } catch (err) {
+                console.error('Load history error:', err);
+            }
+        }
+
+        function displayHistory(sessions) {
+            const historyList = document.getElementById('historyList');
+            if (sessions.length === 0) {
+                historyList.innerHTML = '<div style="color: #8A8A80; font-size: 0.85rem; text-align: center; padding: 1rem;">暂无历史记录</div>';
+                return;
+            }
+
+            historyList.innerHTML = sessions.slice(0, 10).map(item => `
+                <div class="history-item" onclick="loadHistoryItem('${item.id}')">
+                    <div class="history-subject">${item.title}</div>
+                    <div class="history-time">${new Date(item.created_at).toLocaleString('zh-CN')}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadHistoryItem(sessionId) {
+            try {
+                const res = await fetch(`/api/session/${sessionId}/detail`);
+                const session = await res.json();
+
+                if (session.notes_md) {
+                    displayKnowledge(session.notes_md);
+                }
+
+                if (session.mindmap_md) {
+                    displayMindmap(session.mindmap_md);
+                }
+
+                addChatMessage('system', `已加载历史记录：${session.title}`);
+            } catch (err) {
+                alert('加载失败: ' + err.message);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
