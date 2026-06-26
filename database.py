@@ -3,12 +3,20 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 import json
+import os
 
-DB_PATH = Path("knowledge.db")
+# 数据库路径可通过环境变量覆盖。
+# 在 Vercel 等只读文件系统上需指向 /tmp（见 app.py 的 DATA_DIR 逻辑）。
+# 用函数动态读取，避免 import 时机早于环境变量设置。
+def _db_path() -> Path:
+    return Path(os.getenv("KNOWLEDGE_DB", "knowledge.db"))
+
+# 兼容旧引用：保留模块级常量（指向默认值），实际连接一律走 _db_path()
+DB_PATH = _db_path()
 
 def init_db():
     """初始化数据库"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
 
     # 课程表
@@ -139,7 +147,7 @@ def init_db():
 # 提纲管理函数
 def create_course(name: str, semester: str = "", teacher: str = "", color: str = "blue") -> int:
     """创建课程"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("INSERT INTO courses (name, semester, teacher, color) VALUES (?, ?, ?, ?)",
               (name, semester, teacher, color))
@@ -150,7 +158,7 @@ def create_course(name: str, semester: str = "", teacher: str = "", color: str =
 
 def create_outline(course_id: int, title: str, content: str, structure: dict) -> int:
     """创建提纲"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("""
         INSERT INTO outlines (course_id, title, content, structure_json)
@@ -163,7 +171,7 @@ def create_outline(course_id: int, title: str, content: str, structure: dict) ->
 
 def parse_outline_to_sections(outline_id: int, outline_text: str):
     """解析提纲文本为章节树"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
 
     lines = outline_text.strip().split('\n')
@@ -211,7 +219,7 @@ def parse_outline_to_sections(outline_id: int, outline_text: str):
 
 def get_course_by_name(name: str) -> Optional[dict]:
     """根据课程名获取课程"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM courses WHERE name = ? ORDER BY created_at DESC LIMIT 1", (name,))
@@ -221,7 +229,7 @@ def get_course_by_name(name: str) -> Optional[dict]:
 
 def get_latest_outline(course_id: int) -> Optional[dict]:
     """获取课程最新提纲"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""
@@ -237,7 +245,7 @@ def get_latest_outline(course_id: int) -> Optional[dict]:
 
 def get_outline_by_id(outline_id: int) -> Optional[dict]:
     """根据 ID 获取提纲"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM outlines WHERE id = ?", (outline_id,))
@@ -248,7 +256,7 @@ def get_outline_by_id(outline_id: int) -> Optional[dict]:
 def save_session(session_id: str, course_id: int, title: str, outline_id: Optional[int],
                  materials_count: int, ai_analysis: str, notes_md: str, mindmap_md: str):
     """保存整理会话"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("""
         INSERT OR REPLACE INTO sessions
@@ -260,7 +268,7 @@ def save_session(session_id: str, course_id: int, title: str, outline_id: Option
 
 def get_session(session_id: str) -> Optional[dict]:
     """获取会话详情"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
@@ -270,7 +278,7 @@ def get_session(session_id: str) -> Optional[dict]:
 
 def update_session_notes(session_id: str, notes_md: str):
     """更新会话的笔记内容（用于编辑页自动保存）"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("UPDATE sessions SET notes_md = ? WHERE id = ?", (notes_md, session_id))
     conn.commit()
@@ -279,7 +287,7 @@ def update_session_notes(session_id: str, notes_md: str):
 
 def rename_session(session_id: str, new_title: str, new_notes_md: str | None = None):
     """重命名整理记录的标题，可选同步更新笔记正文。"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     if new_notes_md is not None:
         c.execute("UPDATE sessions SET title = ?, notes_md = ? WHERE id = ?",
@@ -291,7 +299,7 @@ def rename_session(session_id: str, new_title: str, new_notes_md: str | None = N
 
 def get_course_sessions(course_id: int, limit: int = 20) -> list[dict]:
     """获取课程的历史会话"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""
@@ -309,7 +317,7 @@ def get_course_sessions(course_id: int, limit: int = 20) -> list[dict]:
 
 def get_course_by_id(course_id: int) -> Optional[dict]:
     """根据 ID 获取课程"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("SELECT * FROM courses WHERE id = ?", (course_id,))
@@ -320,7 +328,7 @@ def get_course_by_id(course_id: int) -> Optional[dict]:
 
 def list_courses_with_stats() -> list[dict]:
     """列出所有课程，附带统计数据（笔记数、重点数、最近更新时间）。"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""
@@ -351,7 +359,7 @@ def list_courses_with_stats() -> list[dict]:
 
 def rename_course(course_id: int, new_name: str):
     """重命名课程"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("UPDATE courses SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
               (new_name, course_id))
@@ -361,7 +369,7 @@ def rename_course(course_id: int, new_name: str):
 
 def update_course_color(course_id: int, color: str):
     """更换课程颜色"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("UPDATE courses SET color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
               (color, course_id))
@@ -371,7 +379,7 @@ def update_course_color(course_id: int, color: str):
 
 def delete_course(course_id: int):
     """删除课程及其所有关联数据"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("SELECT id FROM sessions WHERE course_id = ?", (course_id,))
     session_ids = [r[0] for r in c.fetchall()]
@@ -388,7 +396,7 @@ def delete_course(course_id: int):
 
 def delete_session(session_id: str):
     """删除单个整理会话及其关联数据"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     c = conn.cursor()
     c.execute("DELETE FROM notes WHERE session_id = ?", (session_id,))
     c.execute("DELETE FROM knowledge_points WHERE session_id = ?", (session_id,))
@@ -400,7 +408,7 @@ def delete_session(session_id: str):
 
 def get_course_materials(course_id: int) -> list[dict]:
     """获取课程下所有上传资料"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute("""

@@ -24,16 +24,32 @@ from database import (
 
 load_dotenv()
 
+# ===== 运行环境与数据目录 =====
+# Vercel 等 serverless 平台文件系统只读，仅 /tmp 可写。
+# 通过 VERCEL 环境变量自动判断；本地运行时一切照旧（仓库根目录）。
+IS_SERVERLESS = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+DATA_DIR = Path(os.getenv("DATA_DIR") or ("/tmp/notesai" if IS_SERVERLESS else "."))
+# 数据目录必须先于数据库初始化创建（serverless 上 DATA_DIR 在 /tmp，子目录默认不存在）
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# 让数据库也落到可写目录（database.py 读取 KNOWLEDGE_DB）
+if "KNOWLEDGE_DB" not in os.environ:
+    os.environ["KNOWLEDGE_DB"] = str(DATA_DIR / "knowledge.db")
+
 # 初始化数据库
 init_db()
 
 app = FastAPI(title="课程笔记自动整理系统")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-UPLOAD_DIR = Path("uploads")
-OUTPUT_DIR = Path("outputs")
-UPLOAD_DIR.mkdir(exist_ok=True)
-OUTPUT_DIR.mkdir(exist_ok=True)
+# 静态资源与页面用基于本文件的绝对路径，避免 serverless 下工作目录不确定导致 404
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+UPLOAD_DIR = DATA_DIR / "uploads"
+OUTPUT_DIR = DATA_DIR / "outputs"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 任务状态存储 {job_id: {"status": ..., "progress": ..., "files": [...]}}
 jobs: dict[str, dict] = {}
@@ -166,31 +182,31 @@ async def _run_pipeline(job_id: str, subject: str, outline: str, saved_files: li
 @app.get("/")
 async def index():
     """首页 Landing Page"""
-    return FileResponse("static/home.html")
+    return FileResponse(str(STATIC_DIR / "home.html"))
 
 
 @app.get("/library")
 async def library():
     """课程笔记库（卡片视图）"""
-    return FileResponse("static/library.html")
+    return FileResponse(str(STATIC_DIR / "library.html"))
 
 
 @app.get("/course/{course_id}")
 async def course_page(course_id: int):
     """课程主页（标签页布局）"""
-    return FileResponse("static/course.html")
+    return FileResponse(str(STATIC_DIR / "course.html"))
 
 
 @app.get("/workspace")
 async def workspace():
     """笔记整理工作区"""
-    return FileResponse("static/index.html")
+    return FileResponse(str(STATIC_DIR / "index.html"))
 
 
 @app.get("/edit/{session_id}")
 async def edit_page(session_id: str):
     """资料编辑页（三栏布局）"""
-    return FileResponse("static/edit.html")
+    return FileResponse(str(STATIC_DIR / "edit.html"))
 
 
 @app.post("/process")
@@ -202,7 +218,7 @@ async def process(
 ):
     job_id = uuid.uuid4().hex
     job_dir = UPLOAD_DIR / job_id
-    job_dir.mkdir(exist_ok=True)
+    job_dir.mkdir(parents=True, exist_ok=True)
     jobs[job_id] = {"status": "running", "progress": "📤 上传中...", "files": [], "mindmap": "", "notes_md": ""}
 
     saved: list[Path] = []
@@ -212,13 +228,31 @@ async def process(
             await out.write(await f.read())
         saved.append(dest)
 
-    asyncio.create_task(_run_pipeline(job_id, subject, outline, saved, color))
+    if IS_SERVERLESS:
+        # serverless 平台不保留后台任务，必须在请求内同步处理完
+        await _run_pipeline(job_id, subject, outline, saved, color)
+    else:
+        asyncio.create_task(_run_pipeline(job_id, subject, outline, saved, color))
     return {"job_id": job_id}
 
 
 @app.get("/status/{job_id}")
 async def status(job_id: str):
-    return JSONResponse(jobs.get(job_id, {"status": "not_found"}))
+    # 内存中有就直接返回（本地常驻进程 / 同实例）
+    if job_id in jobs:
+        return JSONResponse(jobs[job_id])
+    # serverless 下轮询请求可能落到新实例，内存查不到 → 回退查数据库。
+    # job_id 即 session_id，处理完成会写入 sessions 表。
+    session = get_session(job_id)
+    if session:
+        return JSONResponse({
+            "status": "done",
+            "progress": "✅ 处理完成！",
+            "notes_md": session.get("notes_md", ""),
+            "mindmap": session.get("mindmap_md", ""),
+            "files": [],
+        })
+    return JSONResponse({"status": "not_found"})
 
 
 @app.get("/download/{job_id}/{filename}")
