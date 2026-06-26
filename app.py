@@ -19,6 +19,7 @@ from database import (
     get_course_sessions, get_course_by_id, list_courses_with_stats,
     rename_course, update_course_color, delete_course, delete_session,
     get_course_materials, update_session_notes, get_outline_by_id,
+    rename_session,
 )
 
 load_dotenv()
@@ -458,6 +459,54 @@ async def save_session_notes(session_id: str, payload: dict):
     if not get_session(session_id):
         return JSONResponse({"error": "session not found"}, status_code=404)
     update_session_notes(session_id, notes_md)
+    return JSONResponse({"ok": True})
+
+
+@app.patch("/api/session/{session_id}/rename")
+async def api_rename_session(session_id: str, payload: dict):
+    """重命名整理记录（标题），并同步到笔记正文最上方的一级大标题。"""
+    new_title = (payload.get("title") or "").strip()
+    if not new_title:
+        return JSONResponse({"error": "标题不能为空"}, status_code=400)
+    session = get_session(session_id)
+    if not session:
+        return JSONResponse({"error": "session not found"}, status_code=404)
+
+    # 同步笔记正文里的一级标题（首个 # 标题行）
+    notes_md = session.get("notes_md") or ""
+    new_notes = _replace_top_heading(notes_md, new_title)
+    rename_session(session_id, new_title, new_notes)
+    return JSONResponse({"ok": True, "title": new_title})
+
+
+def _replace_top_heading(notes_md: str, new_title: str) -> str:
+    """把 Markdown 笔记中的第一个一级标题(# xxx)替换为新标题；若没有则插入到最前面。"""
+    if not notes_md.strip():
+        return f"# {new_title}\n"
+    lines = notes_md.split("\n")
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("# ") and not line.lstrip().startswith("## "):
+            lines[i] = f"# {new_title}"
+            return "\n".join(lines)
+    # 没有一级标题，插到最前
+    return f"# {new_title}\n\n" + notes_md
+
+
+@app.delete("/api/material/{session_id}/{filename}")
+async def delete_material(session_id: str, filename: str):
+    """删除某次整理上传的原始资料文件。"""
+    safe = os.path.basename(filename)
+    path = UPLOAD_DIR / session_id / safe
+    if not path.exists():
+        return JSONResponse({"error": "file not found"}, status_code=404)
+    try:
+        path.unlink()
+        # 同步清理预览缓存
+        preview_pdf = OUTPUT_DIR / "previews" / session_id / (Path(safe).stem + ".pdf")
+        if preview_pdf.exists():
+            preview_pdf.unlink()
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
     return JSONResponse({"ok": True})
 
 

@@ -16,8 +16,10 @@ async function init() {
     document.getElementById('backToCourse').href = `/course/${sessionData.course_id}`;
 
     const md = sessionData.notes_md || '';
-    document.getElementById('editor').innerHTML = md ? marked.parse(md)
+    const editor = document.getElementById('editor');
+    editor.innerHTML = md ? marked.parse(md)
         : '<p style="color:#A0A096;">暂无 AI 总结内容，可在此添加…</p>';
+    highlightExamKeys(editor);
 
     // 思维导图
     if (sessionData.mindmap_md) {
@@ -29,8 +31,18 @@ async function init() {
     await loadMaterials();
     await loadModels();
     renderChat();
+    initFontSize();
+    initHistorySnapshot();
 
-    document.getElementById('editor').addEventListener('input', scheduleSave);
+    editor.addEventListener('input', () => { pushHistory(); scheduleSave(); });
+}
+
+// 高亮「考试重点」引用块
+function highlightExamKeys(root) {
+    if (!root) return;
+    root.querySelectorAll('blockquote').forEach(bq => {
+        if (/【考试重点】/.test(bq.textContent)) bq.classList.add('exam-key');
+    });
 }
 
 // ---- 资料预览 ----
@@ -43,11 +55,12 @@ async function loadMaterials() {
     if (materials.length === 0) {
         tabs.innerHTML = '';
         document.getElementById('previewArea').innerHTML =
-            '<div class="preview-empty"><div class="ico">📂</div><div>该次整理没有原始文件</div></div>';
+            `<div class="preview-empty"><div class="ico" data-icon="folder" data-icon-size="40"></div><div>该次整理没有原始文件</div></div>`;
+        renderDataIcons(document.getElementById('previewArea'));
         return;
     }
     tabs.innerHTML = materials.map((m, i) =>
-        `<div class="file-tab ${i === 0 ? 'active' : ''}" data-i="${i}" onclick="selectFile(${i})">${matIcon(m.kind)} ${escapeHtml(m.name)}</div>`
+        `<div class="file-tab with-ic ${i === 0 ? 'active' : ''}" data-i="${i}" onclick="selectFile(${i})">${icon(kindIcon(m.kind), 14)} ${escapeHtml(m.name)}</div>`
     ).join('');
     selectFile(0);
 }
@@ -55,47 +68,7 @@ async function loadMaterials() {
 function selectFile(i) {
     document.querySelectorAll('.file-tab').forEach(t => t.classList.toggle('active', +t.dataset.i === i));
     const m = materials[i];
-    const area = document.getElementById('previewArea');
-    const kind = m.kind;
-    const rawUrl = m.url;
-    const previewUrl = `/api/preview/${sessionId}/${encodeURIComponent(m.name)}`;
-
-    if (kind === 'image') {
-        area.innerHTML = `<img src="${rawUrl}" alt="${escapeHtml(m.name)}">`;
-    } else if (kind === 'audio') {
-        area.innerHTML = `<div class="preview-empty"><div class="ico">🎤</div><div>${escapeHtml(m.name)}</div></div>
-            <audio controls src="${rawUrl}"></audio>`;
-    } else if (kind === 'pdf' || kind === 'text') {
-        area.innerHTML = `<iframe src="${rawUrl}"></iframe>`;
-    } else if (kind === 'ppt' || kind === 'word') {
-        // 通过后端转 PDF 预览
-        area.innerHTML = `<div class="preview-empty"><div class="ico">⏳</div><div>正在转换预览，请稍候…</div></div>`;
-        fetch(previewUrl).then(async (r) => {
-            const ct = r.headers.get('content-type') || '';
-            if (ct.includes('application/pdf')) {
-                area.innerHTML = `<iframe src="${previewUrl}"></iframe>`;
-            } else {
-                const data = await r.json().catch(() => ({}));
-                if (data.text) {
-                    area.innerHTML = `<div class="md-text">${marked.parse(data.text)}</div>`;
-                } else {
-                    area.innerHTML = `<div class="preview-empty"><div class="ico">${matIcon(kind)}</div>
-                        <div>${escapeHtml(m.name)}</div>
-                        <div class="preview-note">无法在线预览</div>
-                        <a class="back-btn" style="margin-top:1rem;display:inline-block;" href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-                }
-            }
-        }).catch(() => {
-            area.innerHTML = `<div class="preview-empty"><div class="ico">${matIcon(kind)}</div>
-                <div>预览失败</div>
-                <a class="back-btn" style="margin-top:1rem;display:inline-block;" href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-        });
-    } else {
-        area.innerHTML = `<div class="preview-empty"><div class="ico">${matIcon(kind)}</div>
-            <div>${escapeHtml(m.name)}</div>
-            <div class="preview-note">该格式无法在线预览</div>
-            <a class="back-btn" style="margin-top:1rem;display:inline-block;" href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-    }
+    renderDocPreview(document.getElementById('previewArea'), m);
 }
 
 // ---- 编辑器格式化 ----
@@ -113,7 +86,7 @@ function addNote() {
     if (!text) return;
     const div = document.createElement('div');
     div.className = 'inline-note';
-    div.textContent = '📝 ' + text;
+    div.textContent = '批注：' + text;
     const sel = window.getSelection();
     if (sel.rangeCount) { const range = sel.getRangeAt(0); range.collapse(false); range.insertNode(div); }
     else { document.getElementById('editor').appendChild(div); }
@@ -159,15 +132,74 @@ async function exportWord() {
 
 // ---- 工具 ----
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
-function matIcon(kind) {
-    const s = (kind || '').toLowerCase();
-    if (/audio/.test(s)) return '🎤';
-    if (/pdf/.test(s)) return '📕';
-    if (/ppt/.test(s)) return '📊';
-    if (/word/.test(s)) return '📄';
-    if (/image/.test(s)) return '🖼️';
-    if (/text/.test(s)) return '📝';
-    return '📄';
+
+// ===== 撤回 / 恢复撤回（编辑器内容快照栈）=====
+let histStack = [];     // 内容快照（innerHTML）
+let histIndex = -1;     // 当前指针
+let histTimer = null;
+let restoring = false;
+
+function initHistorySnapshot() {
+    const editor = document.getElementById('editor');
+    histStack = [editor.innerHTML];
+    histIndex = 0;
+}
+function pushHistory() {
+    if (restoring) return;
+    clearTimeout(histTimer);
+    histTimer = setTimeout(() => {
+        const html = document.getElementById('editor').innerHTML;
+        if (histStack[histIndex] === html) return;
+        // 丢弃 redo 分支
+        histStack = histStack.slice(0, histIndex + 1);
+        histStack.push(html);
+        if (histStack.length > 100) histStack.shift();
+        histIndex = histStack.length - 1;
+    }, 400);
+}
+function doUndo() {
+    clearTimeout(histTimer);
+    if (histIndex <= 0) return;
+    histIndex--;
+    applyHistory();
+}
+function doRedo() {
+    clearTimeout(histTimer);
+    if (histIndex >= histStack.length - 1) return;
+    histIndex++;
+    applyHistory();
+}
+function applyHistory() {
+    restoring = true;
+    const editor = document.getElementById('editor');
+    editor.innerHTML = histStack[histIndex];
+    highlightExamKeys(editor);
+    restoring = false;
+    scheduleSave();
+}
+// 快捷键 Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
+});
+
+// ===== 字体大小调节 =====
+const FONT_KEY = 'editor_font_size';
+function initFontSize() {
+    const saved = parseInt(localStorage.getItem(FONT_KEY) || '15', 10);
+    setFont(saved);
+}
+function changeFont(delta) {
+    const cur = parseInt(localStorage.getItem(FONT_KEY) || '15', 10);
+    setFont(Math.max(12, Math.min(28, cur + delta)));
+}
+function setFont(px) {
+    document.getElementById('editor').style.fontSize = px + 'px';
+    const el = document.getElementById('fsVal');
+    if (el) el.textContent = px + 'px';
+    localStorage.setItem(FONT_KEY, String(px));
 }
 
 init();
@@ -239,7 +271,7 @@ async function sendChat() {
         if (data.error) throw new Error(data.error);
         chatHistory.push({ role: 'assistant', content: data.reply });
     } catch (e) {
-        chatHistory.push({ role: 'assistant', content: '⚠️ 出错了：' + e.message });
+        chatHistory.push({ role: 'assistant', content: '出错了：' + e.message });
     } finally {
         sendBtn.disabled = false;
         localStorage.setItem(chatKey(), JSON.stringify(chatHistory));

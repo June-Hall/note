@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/icons.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -154,18 +155,18 @@
     </nav>
 
     <section class="hero">
-        <span class="eyebrow">🎓 AI 驱动的课程笔记整理</span>
+        <span class="eyebrow with-ic"><span data-icon="grad" data-icon-size="16"></span> AI 驱动的课程笔记整理</span>
         <h1>让 AI 帮你<span class="accent">整理课堂笔记</span></h1>
         <p class="subtitle">上传录音、课件与截图，自动生成结构化笔记与思维导图。</p>
 
         <div class="entries">
             <a href="/library" class="entry-card">
-                <div class="entry-icon">📂</div>
+                <div class="entry-icon" data-icon="folder" data-icon-size="30"></div>
                 <h3>进入课程笔记库</h3>
                 <p>查看已整理的所有课程与笔记</p>
             </a>
             <a href="/workspace" class="entry-card primary">
-                <div class="entry-icon">＋</div>
+                <div class="entry-icon" data-icon="plus" data-icon-size="30"></div>
                 <h3>创建新笔记</h3>
                 <p>上传资料并开始新的 AI 整理</p>
             </a>
@@ -173,5 +174,6 @@
     </section>
 
     <footer>© 2026 NotesAI · 你的现代化个人知识空间</footer>
+    <script src="/static/icons.js"></script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+/* ===== 统一图标样式（棕色线条）===== */
+.ic {
+    display: inline-block;
+    vertical-align: -0.18em;
+    color: #8A6A43;            /* 默认棕色调 */
+    flex-shrink: 0;
+    stroke-width: 1.9;
+}
+/* 在彩色/深色背景按钮上使用时继承父级颜色 */
+button .ic, a .ic, .icon-btn .ic, .act-btn .ic,
+.tab .ic, .content-tab .ic, .file-tab .ic { color: inherit; }
+
+/* 让带图标的行内元素垂直居中 */
+.with-ic { display: inline-flex; align-items: center; gap: 0.4em; }

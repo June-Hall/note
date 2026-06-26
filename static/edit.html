@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/icons.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -76,6 +77,14 @@
         .tool-btn:hover { background: #F0E3D0; border-color: #C8853F; }
         .tool-btn.export { background: #C8853F; color: #fff; border-color: #C8853F; }
         .tool-btn.export:hover { background: #A86B2C; }
+        .tool-sep { width: 1px; height: 22px; background: #E2D9C8; margin: 0 0.2rem; align-self: center; }
+        /* 字号调节 */
+        .font-size-ctl { display: flex; align-items: center; gap: 0.3rem; }
+        .font-size-ctl .fs-val { font-size: 0.78rem; color: #8A8A80; min-width: 2.4rem; text-align: center; }
+        .preview-loading { padding: 2rem; text-align: center; color: #8A8A80; }
+        .docx-host { background: #fff; }
+        .docx-host .docx-wrapper { background: #f3eee4; padding: 1rem 0; }
+        .docx-host .docx-wrapper > section.docx { box-shadow: 0 2px 12px rgba(0,0,0,0.1); margin-bottom: 1rem; }
         .mid-scroll { flex: 1; overflow-y: auto; }
         .editor {
             padding: 1.5rem; outline: none; line-height: 1.8; font-size: 0.95rem; min-height: 50%;
@@ -89,6 +98,12 @@
         .hl-red { background:#ffd9d6; } .hl-yellow { background:#fff1b8; }
         .hl-green { background:#cdeccd; } .hl-blue { background:#cfe4f7; }
         .inline-note { background:#FDF6E3; border-left:3px solid #E5B53A; padding:0.4rem 0.7rem; margin:0.5rem 0; border-radius:0.4rem; font-size:0.88rem; }
+        /* 考试重点高亮块 */
+        .editor blockquote.exam-key { background:#FCEEE6; border-left:4px solid #C8853F; }
+        .editor blockquote.exam-key::before {
+            content:"★ 考试重点"; display:inline-block; font-size:0.72rem; font-weight:700; color:#fff;
+            background:#C8853F; padding:0.1rem 0.5rem; border-radius:0.3rem; margin-bottom:0.4rem;
+        }
 
         /* 思维导图（编辑器底部） */
         .mindmap-block { border-top: 2px dashed #E2D9C8; padding: 1.2rem 1.5rem; }
@@ -119,7 +134,7 @@
 <body>
     <nav>
         <div class="nav-left">
-            <a href="#" id="backToCourse" class="back-btn">← 返回课程</a>
+            <a href="#" id="backToCourse" class="back-btn with-ic"><span data-icon="back" data-icon-size="15"></span> 返回课程</a>
             <a href="/" class="logo">NotesAI</a>
         </div>
         <span class="save-status" id="saveStatus">已保存</span>
@@ -128,11 +143,11 @@
     <div class="editor-layout" id="layout">
         <!-- 左栏：原始资料预览 -->
         <div class="col left" id="colLeft">
-            <div class="col-head">📎 课程资料原文件</div>
+            <div class="col-head"><span class="with-ic"><span data-icon="file" data-icon-size="16"></span> 课程资料原文件</span></div>
             <div class="col-body">
                 <div class="file-tabs" id="fileTabs"></div>
                 <div class="preview-area" id="previewArea">
-                    <div class="preview-empty"><div class="ico">📂</div><div>选择左上方文件预览</div></div>
+                    <div class="preview-empty"><div class="ico" data-icon="folder" data-icon-size="40"></div><div>选择左上方文件预览</div></div>
                 </div>
             </div>
         </div>
@@ -142,29 +157,39 @@
         <!-- 中栏：AI 总结编辑器 + 思维导图 -->
         <div class="col mid" id="colMid">
             <div class="col-head">
-                ✏️ AI 课程总结（可编辑）
+                <span class="with-ic"><span data-icon="edit" data-icon-size="16"></span> AI 课程总结（可编辑）</span>
                 <span style="font-size:0.78rem; color:#A0A096; font-weight:400;">修改自动保存</span>
             </div>
             <div class="editor-toolbar">
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="exec('bold')"><b>B</b></button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="exec('italic')"><i>I</i></button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('red')">🔴</button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('yellow')">🟡</button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('green')">🟢</button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('blue')">🔵</button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="addNote()">📝 Note</button>
-                <button class="tool-btn" onmousedown="event.preventDefault()" onclick="exec('insertUnorderedList')">• 列表</button>
-                <button class="tool-btn export" onclick="exportWord()">⬇️ 导出 Word</button>
+                <button class="tool-btn" title="撤回" onmousedown="event.preventDefault()" onclick="doUndo()" data-icon="undo" data-icon-size="16"></button>
+                <button class="tool-btn" title="恢复撤回" onmousedown="event.preventDefault()" onclick="doRedo()" data-icon="redo" data-icon-size="16"></button>
+                <span class="tool-sep"></span>
+                <button class="tool-btn" title="加粗" onmousedown="event.preventDefault()" onclick="exec('bold')" data-icon="bold" data-icon-size="16"></button>
+                <button class="tool-btn" title="斜体" onmousedown="event.preventDefault()" onclick="exec('italic')" data-icon="italic" data-icon-size="16"></button>
+                <button class="tool-btn" title="标红" onmousedown="event.preventDefault()" onclick="hl('red')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#ffd9d6;border:1px solid #e7a9a3;"></span></button>
+                <button class="tool-btn" title="标黄" onmousedown="event.preventDefault()" onclick="hl('yellow')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#fff1b8;border:1px solid #e3cf76;"></span></button>
+                <button class="tool-btn" title="标绿" onmousedown="event.preventDefault()" onclick="hl('green')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#cdeccd;border:1px solid #9bcf9b;"></span></button>
+                <button class="tool-btn" title="标蓝" onmousedown="event.preventDefault()" onclick="hl('blue')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#cfe4f7;border:1px solid #93bfe3;"></span></button>
+                <button class="tool-btn with-ic" onmousedown="event.preventDefault()" onclick="addNote()"><span data-icon="note" data-icon-size="15"></span> 批注</button>
+                <button class="tool-btn" title="列表" onmousedown="event.preventDefault()" onclick="exec('insertUnorderedList')" data-icon="list" data-icon-size="16"></button>
+                <span class="tool-sep"></span>
+                <span class="font-size-ctl" title="调节字体大小">
+                    <span data-icon="fontSize" data-icon-size="15" style="color:#8A6A43;"></span>
+                    <button class="tool-btn" onclick="changeFont(-1)">A−</button>
+                    <span class="fs-val" id="fsVal">15px</span>
+                    <button class="tool-btn" onclick="changeFont(1)">A+</button>
+                </span>
+                <button class="tool-btn export with-ic" onclick="exportWord()"><span data-icon="download" data-icon-size="15"></span> 导出 Word</button>
             </div>
             <div class="mid-scroll">
                 <div class="editor" id="editor" contenteditable="true" spellcheck="false"></div>
                 <div class="mindmap-block" id="mindmapBlock" style="display:none;">
                     <div class="mindmap-head">
-                        <span class="title">🧠 思维导图</span>
+                        <span class="title with-ic"><span data-icon="mindmap" data-icon-size="18"></span> 思维导图</span>
                         <div class="mm-exports">
-                            <button class="mm-btn" onclick="exportMindmap('png')">⬇️ PNG</button>
-                            <button class="mm-btn" onclick="exportMindmap('jpg')">⬇️ JPG</button>
-                            <button class="mm-btn" onclick="exportMindmap('pdf')">⬇️ PDF</button>
+                            <button class="mm-btn with-ic" onclick="exportMindmap('png')"><span data-icon="download" data-icon-size="14"></span> PNG</button>
+                            <button class="mm-btn with-ic" onclick="exportMindmap('jpg')"><span data-icon="download" data-icon-size="14"></span> JPG</button>
+                            <button class="mm-btn with-ic" onclick="exportMindmap('pdf')"><span data-icon="download" data-icon-size="14"></span> PDF</button>
                         </div>
                     </div>
                     <div class="mindmap-box"><svg id="mindmap-svg"></svg></div>
@@ -176,7 +201,7 @@
 
         <!-- 右栏：纯 AI 对话 -->
         <div class="col right" id="colRight">
-            <div class="col-head">🤖 AI 助手</div>
+            <div class="col-head"><span class="with-ic"><span data-icon="robot" data-icon-size="16"></span> AI 助手</span></div>
             <div class="col-body">
                 <div class="model-bar">
                     <span style="font-size:0.8rem; color:#8A8A80;">模型</span>
@@ -197,6 +222,10 @@
     <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
+    <script src="/static/icons.js"></script>
+    <script src="/static/docpreview.js"></script>
     <script src="/static/edit.js"></script>
 </body>
 </html>

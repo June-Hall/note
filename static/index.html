@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/icons.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -176,6 +177,12 @@
         }
         .canvas strong { color: #C8853F; }
         .canvas code { background: #FBF7EF; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-family: Consolas, monospace; font-size: 0.9em; }
+        /* 考试重点高亮块 */
+        .canvas blockquote.exam-key { background:#FCEEE6; border-left:4px solid #C8853F; }
+        .canvas blockquote.exam-key::before {
+            content:"★ 考试重点"; display:inline-block; font-size:0.72rem; font-weight:700; color:#fff;
+            background:#C8853F; padding:0.1rem 0.5rem; border-radius:0.3rem; margin-bottom:0.4rem;
+        }
         .canvas pre { background: #2A2723; color: #F6F1E8; padding: 1.2rem; border-radius: 0.6rem; overflow-x: auto; margin: 0.8rem 0; }
         .canvas pre code { background: none; color: inherit; padding: 0; }
         .canvas table { border-collapse: collapse; margin: 0.8rem 0; width: 100%; }
@@ -267,11 +274,11 @@
         <!-- Left Column: Materials -->
         <div class="column">
             <div class="column-scroll">
-                <span class="eyebrow">🎓 AI驱动</span>
+                <span class="eyebrow with-ic"><span data-icon="grad" data-icon-size="15"></span> AI驱动</span>
                 <h2 class="column-header">课程资料</h2>
 
                 <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📎</div>
+                    <div class="upload-icon" data-icon="upload" data-icon-size="40"></div>
                     <div class="upload-text">拖拽或点击上传</div>
                     <div class="upload-hint">支持批量上传 音频/PDF/PPT/图片</div>
                     <input type="file" id="fileInput" multiple
@@ -280,15 +287,15 @@
 
                 <div id="fileCategories">
                     <div class="file-category" id="audioCategory" style="display:none;">
-                        <div class="category-title">🎤 音频文件 <span class="file-count" id="audioCount">0</span></div>
+                        <div class="category-title with-ic"><span data-icon="audio" data-icon-size="15"></span> 音频文件 <span class="file-count" id="audioCount">0</span></div>
                         <div id="audioFiles"></div>
                     </div>
                     <div class="file-category" id="docCategory" style="display:none;">
-                        <div class="category-title">📄 文档课件 <span class="file-count" id="docCount">0</span></div>
+                        <div class="category-title with-ic"><span data-icon="fileText" data-icon-size="15"></span> 文档课件 <span class="file-count" id="docCount">0</span></div>
                         <div id="docFiles"></div>
                     </div>
                     <div class="file-category" id="imageCategory" style="display:none;">
-                        <div class="category-title">🖼️ 图片截图 <span class="file-count" id="imageCount">0</span></div>
+                        <div class="category-title with-ic"><span data-icon="image" data-icon-size="15"></span> 图片截图 <span class="file-count" id="imageCount">0</span></div>
                         <div id="imageFiles"></div>
                     </div>
                 </div>
@@ -309,10 +316,10 @@
                 <div class="form-group">
                     <label class="form-label">教师提纲与考试重点（可选）</label>
                     <textarea class="form-textarea" id="outlineInput"
-                        placeholder="输入老师的课程提纲、考试范围...&#10;&#10;例如：&#10;第一章 汉字起源&#10;重点：甲骨文、金文&#10;考试范围：第一至第三章"></textarea>
+                        placeholder="输入老师的课程提纲、考试重点关键词...&#10;&#10;例如：&#10;第一章 汉字起源&#10;考试重点：甲骨文、金文、六书&#10;AI 会据此在笔记中标注「考试重点」"></textarea>
                 </div>
 
-                <button class="btn btn-primary" id="processBtn">🚀 开始AI整理</button>
+                <button class="btn btn-primary with-ic" id="processBtn" style="justify-content:center;"><span data-icon="sparkle" data-icon-size="16"></span> 开始AI整理</button>
 
                 <div class="progress-container" id="progressContainer">
                     <div class="progress-label">
@@ -323,7 +330,7 @@
                 </div>
 
                 <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid #E2D9C8;">
-                    <div style="font-size:0.9rem; font-weight:600; color:#8A8A80; margin-bottom:0.8rem;">📜 历史记录</div>
+                    <div class="with-ic" style="font-size:0.9rem; font-weight:600; color:#8A8A80; margin-bottom:0.8rem;"><span data-icon="book" data-icon-size="15"></span> 历史记录</div>
                     <div id="historyList"></div>
                 </div>
             </div>
@@ -332,28 +339,28 @@
         <!-- Right Column: Knowledge Canvas + Mindmap -->
         <div class="column">
             <div class="content-tabs">
-                <div class="content-tab active" data-tab="canvas">📝 知识工作区</div>
-                <div class="content-tab" data-tab="mindmap">🗺️ 思维导图</div>
+                <div class="content-tab active with-ic" data-tab="canvas"><span data-icon="edit" data-icon-size="15"></span> 知识工作区</div>
+                <div class="content-tab with-ic" data-tab="mindmap"><span data-icon="mindmap" data-icon-size="15"></span> 思维导图</div>
             </div>
 
             <!-- Canvas Pane -->
             <div class="content-pane active" id="canvas-pane">
                 <div class="editor-toolbar" id="editorToolbar" style="display:none;">
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('bold')"><b>B</b></button>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('italic')"><i>I</i></button>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
+                    <button class="tool-btn" title="加粗" onmousedown="event.preventDefault()" onclick="fmt('bold')" data-icon="bold" data-icon-size="15"></button>
+                    <button class="tool-btn" title="斜体" onmousedown="event.preventDefault()" onclick="fmt('italic')" data-icon="italic" data-icon-size="15"></button>
+                    <button class="tool-btn" title="下划线" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
                     <div class="tool-divider"></div>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('red')">🔴 标红</button>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('yellow')">🟡 黄</button>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('green')">🟢 绿</button>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="hl('blue')">🔵 蓝</button>
+                    <button class="tool-btn" title="标红" onmousedown="event.preventDefault()" onclick="hl('red')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#ffebee;border:1px solid #e7a9a3;"></span></button>
+                    <button class="tool-btn" title="标黄" onmousedown="event.preventDefault()" onclick="hl('yellow')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#fff3c4;border:1px solid #e3cf76;"></span></button>
+                    <button class="tool-btn" title="标绿" onmousedown="event.preventDefault()" onclick="hl('green')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#d7f5dd;border:1px solid #9bcf9b;"></span></button>
+                    <button class="tool-btn" title="标蓝" onmousedown="event.preventDefault()" onclick="hl('blue')"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:#d6e9ff;border:1px solid #93bfe3;"></span></button>
                     <div class="tool-divider"></div>
-                    <button class="tool-btn" onmousedown="event.preventDefault()" onclick="addInlineNote()">📝 添加笔记</button>
-                    <button class="tool-btn export" onclick="exportWord()">⬇️ 一键导出 Word</button>
+                    <button class="tool-btn with-ic" onmousedown="event.preventDefault()" onclick="addInlineNote()"><span data-icon="note" data-icon-size="14"></span> 添加笔记</button>
+                    <button class="tool-btn export with-ic" onclick="exportWord()"><span data-icon="download" data-icon-size="14"></span> 一键导出 Word</button>
                 </div>
 
                 <div class="empty-state" id="canvasEmpty">
-                    <div class="empty-icon">📝</div>
+                    <div class="empty-icon" data-icon="edit" data-icon-size="44"></div>
                     <div>上传课程资料并开始整理后<br>AI 生成的笔记将显示在这里，可直接编辑</div>
                 </div>
 
@@ -362,26 +369,26 @@
                 <div class="ai-modify-bar" id="aiModifyBar" style="display:none;">
                     <input type="text" class="ai-modify-input" id="aiModifyInput"
                         placeholder="告诉 AI 怎么修改，例如：把第二章改写得更精简，补充每节的重点…">
-                    <button class="ai-modify-btn" id="aiModifyBtn" onclick="aiModify()">✨ AI 修改</button>
+                    <button class="ai-modify-btn with-ic" id="aiModifyBtn" onclick="aiModify()"><span data-icon="sparkle" data-icon-size="15"></span> AI 修改</button>
                 </div>
             </div>
 
             <!-- Mindmap Pane -->
             <div class="content-pane" id="mindmap-pane">
                 <div class="empty-state" id="mindmapEmpty">
-                    <div class="empty-icon">🗺️</div>
+                    <div class="empty-icon" data-icon="mindmap" data-icon-size="44"></div>
                     <div>思维导图将在整理完成后自动生成</div>
                 </div>
                 <div class="mindmap-wrap" id="mindmapWrap" style="display:none;">
                     <div class="mindmap-toolbar">
-                        <button class="mm-btn" onclick="mmZoom(1.25)">➕ 放大</button>
-                        <button class="mm-btn" onclick="mmZoom(0.8)">➖ 缩小</button>
-                        <button class="mm-btn" onclick="mmFit()">⤢ 适应</button>
-                        <button class="mm-btn" onclick="mmFullscreen()">⛶ 全屏</button>
+                        <button class="mm-btn with-ic" onclick="mmZoom(1.25)"><span data-icon="zoomIn" data-icon-size="14"></span> 放大</button>
+                        <button class="mm-btn with-ic" onclick="mmZoom(0.8)"><span data-icon="zoomOut" data-icon-size="14"></span> 缩小</button>
+                        <button class="mm-btn with-ic" onclick="mmFit()"><span data-icon="fit" data-icon-size="14"></span> 适应</button>
+                        <button class="mm-btn with-ic" onclick="mmFullscreen()"><span data-icon="fullscreen" data-icon-size="14"></span> 全屏</button>
                         <div class="tool-divider" style="width:1px; height:20px; background:#E2D9C8; margin:0 0.2rem;"></div>
-                        <button class="mm-btn" onclick="exportMindmap('png')">⬇️ PNG</button>
-                        <button class="mm-btn" onclick="exportMindmap('jpg')">⬇️ JPG</button>
-                        <button class="mm-btn" onclick="exportMindmap('pdf')">⬇️ PDF</button>
+                        <button class="mm-btn with-ic" onclick="exportMindmap('png')"><span data-icon="download" data-icon-size="14"></span> PNG</button>
+                        <button class="mm-btn with-ic" onclick="exportMindmap('jpg')"><span data-icon="download" data-icon-size="14"></span> JPG</button>
+                        <button class="mm-btn with-ic" onclick="exportMindmap('pdf')"><span data-icon="download" data-icon-size="14"></span> PDF</button>
                     </div>
                     <div class="mindmap-container" id="mindmapContainer">
                         <svg id="mindmap-svg"></svg>
@@ -395,8 +402,8 @@
     <div class="modal" id="noteModal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">📝 添加笔记</div>
-                <button class="modal-close" onclick="closeNoteModal()">&times;</button>
+                <div class="modal-title with-ic"><span data-icon="note" data-icon-size="18"></span> 添加笔记</div>
+                <button class="modal-close" onclick="closeNoteModal()" data-icon="close" data-icon-size="18"></button>
             </div>
             <div class="form-group">
                 <label class="form-label">笔记标题</label>
@@ -412,6 +419,17 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- 文档预览弹窗 -->
+    <div class="modal" id="filePreviewModal">
+        <div class="modal-content" style="max-width:900px; width:92%; height:82vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
+            <div class="modal-header" style="padding:1rem 1.3rem; margin:0; border-bottom:1px solid #E2D9C8;">
+                <div class="modal-title" id="filePreviewTitle">预览</div>
+                <button class="modal-close" onclick="closeFilePreview()" data-icon="close" data-icon-size="18"></button>
+            </div>
+            <div id="filePreviewBody" style="flex:1; overflow:auto; background:#F6F1E8;"></div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
@@ -419,6 +437,10 @@
     <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
+    <script src="/static/icons.js"></script>
+    <script src="/static/docpreview.js"></script>
     <script>
         // ---------- Global State ----------
         let selectedFiles = [];
@@ -452,6 +474,14 @@
             setTimeout(() => t.classList.remove('show'), 2200);
         }
 
+        // 高亮「考试重点」引用块
+        function highlightExamKeys(root) {
+            if (!root) return;
+            root.querySelectorAll('blockquote').forEach(bq => {
+                if (/【考试重点】/.test(bq.textContent)) bq.classList.add('exam-key');
+            });
+        }
+
         // ---------- File Upload ----------
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -468,19 +498,58 @@
         function removeFile(index) { selectedFiles.splice(index, 1); updateFileDisplay(); }
 
         function getFileIcon(name) {
-            const l = name.toLowerCase();
-            if (audioExts.some(e => l.endsWith(e))) return '🎤';
-            if (l.endsWith('.pdf')) return '📕';
-            if (l.endsWith('.pptx')) return '📊';
-            if (l.endsWith('.docx')) return '📄';
-            if (imageExts.some(e => l.endsWith(e))) return '🖼️';
-            return '📄';
+            return icon(kindIcon(name), 16);
         }
         function fileItemHtml(f) {
             const idx = selectedFiles.indexOf(f);
+            const l = f.name.toLowerCase();
+            const canPreview = /\.(pdf|pptx?|docx?|txt|md|srt|jpg|jpeg|png|bmp|webp|gif|mp3|wav|m4a|ogg|flac)$/.test(l);
+            const previewBtn = canPreview
+                ? `<button class="file-action-btn" title="预览" onclick="previewLocalFile(${idx})">${icon('eye',15)}</button>`
+                : '';
             return `<div class="file-item"><div class="file-info"><span>${getFileIcon(f.name)}</span>
                 <span class="file-name" title="${f.name}">${f.name}</span></div>
-                <button class="file-action-btn" onclick="removeFile(${idx})">✕</button></div>`;
+                <div style="display:flex;gap:0.3rem;align-items:center;">${previewBtn}
+                <button class="file-action-btn" title="移除" onclick="removeFile(${idx})">${icon('close',15)}</button></div></div>`;
+        }
+
+        // 预览尚未上传的本地文件（创建临时对象 URL）
+        function previewLocalFile(idx) {
+            const f = selectedFiles[idx];
+            if (!f) return;
+            const url = URL.createObjectURL(f);
+            const kind = kindIcon(f.name); // 'pdf'|'image'|... 不完全等于后端 kind，单独判定
+            const l = f.name.toLowerCase();
+            let k = 'other';
+            if (/\.(mp3|wav|m4a|ogg|flac)$/.test(l)) k = 'audio';
+            else if (l.endsWith('.pdf')) k = 'pdf';
+            else if (/\.pptx?$/.test(l)) k = 'ppt';
+            else if (/\.docx?$/.test(l)) k = 'word';
+            else if (/\.(jpg|jpeg|png|bmp|webp|gif)$/.test(l)) k = 'image';
+            else if (/\.(txt|md|srt)$/.test(l)) k = 'text';
+
+            document.getElementById('filePreviewTitle').textContent = f.name;
+            const body = document.getElementById('filePreviewBody');
+            document.getElementById('filePreviewModal').classList.add('active');
+
+            // 本地文件：图片/音频/PDF/文本直接用对象 URL；Word 用 docx-preview 渲染版式；PPT 无法本地转版式
+            if (k === 'image') body.innerHTML = `<img src="${url}" style="max-width:100%;display:block;margin:1rem auto;">`;
+            else if (k === 'audio') body.innerHTML = `<audio controls src="${url}" style="width:90%;margin:2rem auto;display:block;"></audio>`;
+            else if (k === 'pdf') body.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+            else if (k === 'text') body.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;background:#fff;"></iframe>`;
+            else if (k === 'word') {
+                body.innerHTML = '<div class="docx-host" style="height:100%;overflow:auto;"></div>';
+                f.arrayBuffer().then(buf => window.docx.renderAsync(buf, body.querySelector('.docx-host'), null, { className:'docx', inWrapper:true, breakPages:true }))
+                    .catch(e => { body.innerHTML = `<div style="padding:2rem;text-align:center;color:#8A8A80;">无法渲染该 Word：${e.message}</div>`; });
+            } else if (k === 'ppt') {
+                body.innerHTML = `<div style="padding:3rem;text-align:center;color:#8A8A80;">${icon('ppt',40)}<div style="margin-top:1rem;">PPT 版式预览需在整理完成后于课程页查看（服务器转 PDF）。</div></div>`;
+            } else {
+                body.innerHTML = `<div style="padding:3rem;text-align:center;color:#8A8A80;">该格式暂不支持预览。</div>`;
+            }
+        }
+        function closeFilePreview() {
+            document.getElementById('filePreviewModal').classList.remove('active');
+            document.getElementById('filePreviewBody').innerHTML = '';
         }
         function updateFileDisplay() {
             const groups = [
@@ -563,12 +632,12 @@
                         if (data.mindmap) renderMindmap(data.mindmap);
                         switchTab('canvas');
                         loadHistory();
-                        toast('✅ AI 整理完成');
+                        toast('AI 整理完成');
                     } else if (data.status === 'error') {
                         clearInterval(interval);
                         document.getElementById('processBtn').disabled = false;
                         document.getElementById('progressContainer').style.display = 'none';
-                        toast('❌ ' + (data.progress || '处理出错'));
+                        toast('处理失败：' + (data.progress || '处理出错'));
                     }
                 } catch (err) { console.error('poll error', err); }
             }, 1000);
@@ -582,6 +651,7 @@
             currentMarkdown = markdownText;
             const canvas = document.getElementById('canvas');
             canvas.innerHTML = marked.parse(markdownText);
+            highlightExamKeys(canvas);
 
             console.log('  转换后 HTML 长度:', canvas.innerHTML.length);
             console.log('  canvas 元素:', canvas);
@@ -641,7 +711,7 @@
             const noteDiv = document.createElement('div');
             noteDiv.className = 'inline-note';
             noteDiv.contentEditable = 'false';
-            noteDiv.innerHTML = `<div class="note-label">📝 ${title}</div>${content}`;
+            noteDiv.innerHTML = `<div class="note-label">${escapeHtml(title)}</div>${escapeHtml(content)}`;
 
             const canvas = document.getElementById('canvas');
             if (savedRange && canvas.contains(savedRange.commonAncestorContainer)) {
@@ -660,7 +730,7 @@
             if (!instruction) return toast('请输入修改要求');
             const btn = document.getElementById('aiModifyBtn');
             btn.disabled = true;
-            btn.textContent = '✨ AI 修改中...';
+            btn.textContent = 'AI 修改中...';
 
             try {
                 const notes_md = canvasToMarkdown();
@@ -673,12 +743,12 @@
                 if (data.error) throw new Error(data.error);
                 loadCanvas(data.notes_md);
                 document.getElementById('aiModifyInput').value = '';
-                toast('✅ AI 已按要求修改');
+                toast('AI 已按要求修改');
             } catch (err) {
                 toast('修改失败: ' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '✨ AI 修改';
+                btn.textContent = 'AI 修改';
             }
         }
         document.getElementById('aiModifyInput').addEventListener('keydown', e => {
@@ -704,7 +774,7 @@
                 a.download = (currentSubject || '课程笔记') + '.docx';
                 a.click();
                 URL.revokeObjectURL(url);
-                toast('✅ Word 已导出');
+                toast('Word 已导出');
             } catch (err) {
                 toast('导出失败: ' + err.message);
             }
@@ -783,7 +853,7 @@
                     a.href = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 0.95);
                     a.click();
                 }
-                toast('✅ 已导出 ' + format.toUpperCase());
+                toast('已导出 ' + format.toUpperCase());
             };
             img.onerror = () => { URL.revokeObjectURL(url); toast('导出失败，请重试'); };
             img.src = url;
@@ -828,8 +898,7 @@
                         <div class="history-time">${new Date(item.created_at).toLocaleString('zh-CN')}</div>
                     </div>
                     <div class="history-acts">
-                        <span class="hist-act" title="查看" onclick="loadHistoryItem('${item.id}')">👁️</span>
-                        <span class="hist-act" title="删除" onclick="deleteHistory('${item.id}', event)">🗑️</span>
+                        <span class="hist-act" title="删除" onclick="deleteHistory('${item.id}', event)">${icon('trash',15)}</span>
                     </div>
                 </div>`).join('');
             console.log('  历史记录已渲染到页面');
@@ -883,14 +952,52 @@
                 subjectInput.value = '';
                 subjectInput.readOnly = false;
                 subjectInput.placeholder = '输入新课程名称，如：基础写作 - 第五讲';
+                // 新建课程：清空右侧工作区
+                clearWorkspace();
+                displayHistory([]);
             } else {
                 const opt = sel.selectedOptions[0];
                 window.selectedFolderColor = opt.dataset.color || 'blue';
                 subjectInput.value = opt.dataset.name || '';
+                localStorage.setItem('lastCourse', subjectInput.value);
+                // 选择已有课程：加载其历史记录与最新一篇笔记到工作区
+                loadCourseIntoWorkspace(opt.dataset.name || '');
+            }
+        }
+
+        // 清空右侧知识工作区（回到空状态）
+        function clearWorkspace() {
+            currentMarkdown = '';
+            const canvas = document.getElementById('canvas');
+            canvas.innerHTML = '';
+            canvas.style.display = 'none';
+            document.getElementById('canvasEmpty').style.display = 'block';
+            document.getElementById('editorToolbar').style.display = 'none';
+            document.getElementById('aiModifyBar').style.display = 'none';
+            document.getElementById('mindmapEmpty').style.display = 'block';
+            document.getElementById('mindmapWrap').style.display = 'none';
+        }
+
+        // 加载某门课程到工作区（修复：选择课程后右侧无法显示内容的问题）
+        async function loadCourseIntoWorkspace(courseName) {
+            if (!courseName) return;
+            try {
+                const res = await fetch(`/api/courses/${encodeURIComponent(courseName)}/history`);
+                const data = await res.json();
+                const sessions = data.sessions || [];
+                displayHistory(sessions);
+                if (sessions.length) {
+                    await loadHistoryItem(sessions[0].id);
+                } else {
+                    clearWorkspace();
+                }
+            } catch (err) {
+                console.error('加载课程到工作区失败:', err);
             }
         }
 
         function escapeAttr(s) { return (s || '').replace(/"/g, '&quot;'); }
+        function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
 
         // ---------- Init ----------
         async function loadLatestResult() {

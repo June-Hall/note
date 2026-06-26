@@ -276,6 +276,19 @@ def update_session_notes(session_id: str, notes_md: str):
     conn.commit()
     conn.close()
 
+
+def rename_session(session_id: str, new_title: str, new_notes_md: str | None = None):
+    """重命名整理记录的标题，可选同步更新笔记正文。"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if new_notes_md is not None:
+        c.execute("UPDATE sessions SET title = ?, notes_md = ? WHERE id = ?",
+                  (new_title, new_notes_md, session_id))
+    else:
+        c.execute("UPDATE sessions SET title = ? WHERE id = ?", (new_title, session_id))
+    conn.commit()
+    conn.close()
+
 def get_course_sessions(course_id: int, limit: int = 20) -> list[dict]:
     """获取课程的历史会话"""
     conn = sqlite3.connect(DB_PATH)

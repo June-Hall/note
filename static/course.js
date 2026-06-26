@@ -30,7 +30,7 @@ async function loadCourse() {
 
     // 默认加载最新（且未隐藏）会话的内容
     const firstVisible = sessions.find(s => !isHidden(s.id));
-    if (firstVisible) loadSessionContent(firstVisible.id);
+    if (firstVisible) selectSession(firstVisible.id);
 }
 
 // ---- 隐藏状态管理（localStorage 持久化）----
@@ -54,7 +54,7 @@ function renderSessions() {
     const visible = sessions.filter(s => !isHidden(s.id));
 
     if (sessions.length === 0) {
-        list.innerHTML = `<div class="empty-mini"><div class="ico">📄</div><p>该课程还没有整理记录</p></div>`;
+        list.innerHTML = `<div class="empty-mini"><div class="ico">${icon('summary',40)}</div><p>该课程还没有整理记录</p></div>`;
         document.getElementById('batchBar').classList.remove('active');
         return;
     }
@@ -65,27 +65,34 @@ function renderSessions() {
 
     // 已隐藏的资料折叠在下方，仍可点眼睛恢复
     if (hiddenCount > 0) {
-        html += `<div class="hidden-divider">已隐藏 ${hiddenCount} 项（点击 🙈 可恢复显示）</div>`;
+        html += `<div class="hidden-divider">已隐藏 ${hiddenCount} 项（点击眼睛图标可恢复显示）</div>`;
         html += sessions.filter(s => isHidden(s.id)).map(s => sessionRow(s, true)).join('');
     }
     list.innerHTML = html;
+    if (selectedSessionId) {
+        const row = list.querySelector(`.session-row[data-id="${selectedSessionId}"]`);
+        if (row) row.classList.add('selected');
+    }
 }
 
 function sessionRow(s, hidden) {
     return `
-        <div class="session-row ${hidden ? 'hidden-row' : ''}" onclick="openEdit('${s.id}')">
-            <div class="session-info" style="display:flex;align-items:center;gap:0.8rem;">
+        <div class="session-row ${hidden ? 'hidden-row' : ''}" data-id="${s.id}" onclick="selectSession('${s.id}')">
+            <div class="session-info" style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
                 <input type="checkbox" class="sess-cb" value="${s.id}"
                     onclick="event.stopPropagation()" onchange="updateSelCount()">
-                <div>
-                    <div class="title">${escapeHtml(s.title)}</div>
+                <div style="flex:1;min-width:0;">
+                    <input class="title-edit" value="${escapeHtml(s.title)}"
+                        onclick="event.stopPropagation()"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+                        onblur="renameSession('${s.id}', this.value)">
                     <div class="time">${fmt(s.created_at)} · ${s.materials_count || 0} 个资料</div>
                 </div>
             </div>
             <div class="session-acts" onclick="event.stopPropagation()">
-                <div class="icon-btn" title="${hidden ? '显示' : '隐藏'}" onclick="toggleHidden('${s.id}', event)">${hidden ? '🙈' : '👁️'}</div>
-                <div class="icon-btn" title="编辑" onclick="openEdit('${s.id}')">✏️</div>
-                <div class="icon-btn" title="删除" onclick="deleteSession('${s.id}')">🗑️</div>
+                <div class="icon-btn" title="${hidden ? '显示' : '隐藏'}" onclick="toggleHidden('${s.id}', event)">${icon(hidden ? 'eyeOff' : 'eye', 16)}</div>
+                <div class="icon-btn" title="进入编辑" onclick="openEdit('${s.id}')">${icon('edit', 16)}</div>
+                <div class="icon-btn danger" title="删除" onclick="deleteSession('${s.id}')">${icon('trash', 16)}</div>
             </div>
         </div>`;
 }
@@ -95,12 +102,52 @@ function openEdit(sessionId) {
     window.location.href = `/edit/${sessionId}`;
 }
 
+// 选中状态：第一次点击展示内容，再次点击同一项进入编辑
+let selectedSessionId = null;
+function selectSession(sessionId) {
+    if (selectedSessionId === sessionId) {
+        // 已选中 → 再次点击进入编辑
+        openEdit(sessionId);
+        return;
+    }
+    selectedSessionId = sessionId;
+    document.querySelectorAll('.session-row').forEach(r =>
+        r.classList.toggle('selected', r.dataset.id === sessionId));
+    loadSessionContent(sessionId);
+    // 滚动到内容
+    setTimeout(() => {
+        document.getElementById('summaryContent').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 60);
+}
+
+// 重命名整理记录（标题同步到笔记正文大标题）
+async function renameSession(sessionId, newTitle) {
+    newTitle = (newTitle || '').trim();
+    const s = sessions.find(x => x.id === sessionId);
+    if (!s || !newTitle || newTitle === s.title) return;
+    try {
+        await fetch(`/api/session/${sessionId}/rename`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle }),
+        });
+        s.title = newTitle;
+        // 若正在查看该记录，刷新内容（标题已同步）
+        if (selectedSessionId === sessionId) loadSessionContent(sessionId);
+    } catch (e) { console.error('重命名失败', e); }
+}
+
 async function loadSessionContent(sessionId) {
     const res = await fetch(`/api/session/${sessionId}/detail`);
     const s = await res.json();
+    const hintBtn = `<div class="preview-hint">${icon('eye',16)} 这是该资料的内容预览，确认后可
+        <button class="enter-edit-btn" onclick="openEdit('${sessionId}')">${icon('edit',14)} 进入详细编辑</button></div>`;
     if (s.notes_md) {
         document.getElementById('summaryContent').innerHTML =
-            `<div class="md-content">${marked.parse(s.notes_md)}</div>`;
+            hintBtn + `<div class="md-content">${marked.parse(s.notes_md)}</div>`;
+        highlightExamKeys(document.getElementById('summaryContent'));
+    } else {
+        document.getElementById('summaryContent').innerHTML = hintBtn +
+            `<div class="md-content" style="color:#A0A096;">该资料暂无整理内容。</div>`;
     }
     if (s.mindmap_md) {
         currentMindmapMd = s.mindmap_md;
@@ -150,17 +197,32 @@ async function batchDelete() {
 function renderMaterials() {
     const pane = document.getElementById('materials-pane');
     if (materials.length === 0) {
-        pane.innerHTML = `<div class="empty-mini"><div class="ico">📂</div><p>暂无上传的课堂资料</p></div>`;
+        pane.innerHTML = `<div class="empty-mini"><div class="ico">${icon('folder',40)}</div><p>暂无上传的课堂资料</p></div>`;
         return;
     }
     pane.innerHTML = `
         <div class="section-label" style="margin-bottom:1rem;">共 ${materials.length} 个资料</div>
         <div class="mat-grid">${materials.map((m, i) => `
             <div class="mat-card" onclick="previewMaterial(${i})">
-                <div class="mat-icon">${matIcon(m.kind || m.name)}</div>
+                <div class="mat-del" title="删除资料" onclick="deleteMaterial(${i}, event)">${icon('trash',15)}</div>
+                <div class="mat-icon">${icon(kindIcon(m.kind || m.name), 34)}</div>
                 <div class="mat-name">${escapeHtml(m.name || '未命名')}</div>
                 <div class="mat-sub">${m.session_title ? escapeHtml(m.session_title) : ''} · ${fmtSize(m.size)}</div>
             </div>`).join('')}</div>`;
+}
+
+// 删除资料文件
+async function deleteMaterial(i, ev) {
+    if (ev) ev.stopPropagation();
+    const m = materials[i];
+    if (!m) return;
+    if (!confirm(`确定删除资料「${m.name}」吗？此操作无法恢复。`)) return;
+    try {
+        const res = await fetch(`/api/material/${m.session_id}/${encodeURIComponent(m.name)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('删除失败');
+        materials.splice(i, 1);
+        renderMaterials();
+    } catch (e) { alert('删除失败：' + e.message); }
 }
 
 function previewMaterial(i) {
@@ -170,40 +232,7 @@ function previewMaterial(i) {
     const body = document.getElementById('previewBody');
     document.getElementById('previewTitle').textContent = m.name || '预览';
     modal.classList.add('active');
-
-    const kind = m.kind;
-    const rawUrl = m.url;                                   // 原始文件
-    const previewUrl = `/api/preview/${m.session_id}/${encodeURIComponent(m.name)}`;
-
-    if (kind === 'image') {
-        body.innerHTML = `<img src="${rawUrl}" alt="${escapeHtml(m.name)}">`;
-    } else if (kind === 'audio') {
-        body.innerHTML = `<audio controls src="${rawUrl}"></audio>`;
-    } else if (kind === 'pdf') {
-        body.innerHTML = `<iframe src="${rawUrl}"></iframe>`;
-    } else if (kind === 'text') {
-        body.innerHTML = `<iframe src="${rawUrl}"></iframe>`;
-    } else if (kind === 'ppt' || kind === 'word') {
-        // 通过后端转 PDF 预览，失败则回退文字
-        body.innerHTML = `<div class="preview-loading">正在转换预览，请稍候…</div>`;
-        fetch(previewUrl).then(async (r) => {
-            const ct = r.headers.get('content-type') || '';
-            if (ct.includes('application/pdf')) {
-                body.innerHTML = `<iframe src="${previewUrl}"></iframe>`;
-            } else {
-                const data = await r.json().catch(() => ({}));
-                if (data.text) {
-                    body.innerHTML = `<div class="md-text">${marked.parse(data.text)}</div>`;
-                } else {
-                    body.innerHTML = `<div class="preview-loading">无法预览，<a href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-                }
-            }
-        }).catch(() => {
-            body.innerHTML = `<div class="preview-loading">预览失败，<a href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-        });
-    } else {
-        body.innerHTML = `<div class="preview-loading">该格式无法在线预览，<a href="${rawUrl}" target="_blank">下载原文件</a></div>`;
-    }
+    renderDocPreview(body, m);
 }
 
 function closePreview(ev) {
@@ -224,15 +253,13 @@ function fmtSize(bytes) {
 // ---- 工具函数 ----
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
 function fmt(ts) { if (!ts) return '—'; const d = new Date(ts.replace(' ','T')); return isNaN(d) ? ts : d.toLocaleString('zh-CN'); }
-function matIcon(t) {
-    const s = (t || '').toLowerCase();
-    if (/audio|mp3|wav|m4a|ogg|flac/.test(s)) return '🎤';
-    if (/pdf/.test(s)) return '📕';
-    if (/ppt/.test(s)) return '📊';
-    if (/word|doc/.test(s)) return '📄';
-    if (/image|jpg|jpeg|png|webp|bmp|gif/.test(s)) return '🖼️';
-    if (/text|txt|md|srt/.test(s)) return '📝';
-    return '📄';
+
+// 高亮笔记里的「考试重点」引用块
+function highlightExamKeys(root) {
+    if (!root) return;
+    root.querySelectorAll('blockquote').forEach(bq => {
+        if (/【考试重点】/.test(bq.textContent)) bq.classList.add('exam-key');
+    });
 }
 
 // ---- Tab 切换 ----

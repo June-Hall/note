@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/icons.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -76,16 +77,39 @@
         }
         .session-row:hover { box-shadow: 0 6px 18px rgba(31,36,33,0.08); transform: translateY(-2px); }
         .session-row.hidden-row { opacity: 0.5; }
+        .session-row.selected { border-color: #C8853F; box-shadow: 0 6px 18px rgba(200,133,63,0.18); }
         .hidden-divider { font-size: 0.78rem; color: #A0A096; margin: 1rem 0 0.6rem; text-align: center; }
         .session-info .title { font-weight: 600; margin-bottom: 0.3rem; }
+        /* 鼠标靠近可重命名的标题输入框 */
+        .title-edit {
+            font: inherit; font-weight: 600; color: #1F2421; border: 1px solid transparent;
+            background: transparent; border-radius: 0.35rem; padding: 0.1rem 0.35rem;
+            width: 100%; max-width: 360px; margin-bottom: 0.3rem; transition: all 0.15s;
+        }
+        .session-row:hover .title-edit { border-color: #E2D9C8; background: #FBF7EF; }
+        .title-edit:focus { outline: none; border-color: #C8853F; background: #fff; }
         .session-info .time { font-size: 0.8rem; color: #A0A096; }
         .session-acts { display: flex; gap: 0.6rem; align-items: center; }
         .icon-btn {
             width: 32px; height: 32px; border-radius: 0.5rem; border: 1px solid #E2D9C8;
             background: #FBF7EF; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; font-size: 0.9rem; transition: all 0.15s;
+            justify-content: center; font-size: 0.9rem; transition: all 0.15s; color: #8A6A43;
         }
         .icon-btn:hover { background: #F0E3D0; border-color: #C8853F; }
+        .icon-btn.danger:hover { background: #FBE3E1; border-color: #D9534F; color: #D9534F; }
+
+        /* 选中资料后底部内联预览提示 */
+        .preview-hint {
+            font-size: 0.82rem; color: #C8853F; background: #FBF3E6; border: 1px dashed #E0C49A;
+            border-radius: 0.6rem; padding: 0.6rem 1rem; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .enter-edit-btn {
+            margin-left: auto; padding: 0.4rem 0.9rem; background: #C8853F; color: #fff;
+            border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+        }
+        .enter-edit-btn:hover { background: #A86B2C; }
 
         /* Markdown content */
         .md-content { background: #FFFFFF; border: 1px solid #E2D9C8; border-radius: 1rem; padding: 2rem; line-height: 1.8; }
@@ -94,6 +118,16 @@
         .md-content h3 { font-size: 1.15rem; margin: 1rem 0 0.6rem; }
         .md-content blockquote { background: #FBF7EF; border-left: 4px solid #C8853F; padding: 0.8rem 1.2rem; margin: 0.8rem 0; border-radius: 0.4rem; }
         .md-content code { background: #FBF7EF; padding: 0.15rem 0.4rem; border-radius: 0.3rem; font-family: Consolas, monospace; }
+        /* 考试重点高亮块 */
+        .md-content blockquote.exam-key {
+            background: #FCEEE6; border-left: 4px solid #C8853F; position: relative;
+            padding-left: 1.2rem;
+        }
+        .md-content blockquote.exam-key::before {
+            content: "★ 考试重点"; display: inline-block; font-size: 0.72rem; font-weight: 700;
+            color: #fff; background: #C8853F; padding: 0.1rem 0.5rem; border-radius: 0.3rem;
+            margin-bottom: 0.4rem;
+        }
 
         /* Mindmap */
         .mindmap-toolbar { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
@@ -115,14 +149,17 @@
         }
         .mat-card:hover { box-shadow: 0 6px 18px rgba(31,36,33,0.08); transform: translateY(-2px); }
         .mat-card.hidden-item { opacity: 0.45; }
-        .mat-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+        .mat-icon { font-size: 2rem; margin-bottom: 0.6rem; color: #8A6A43; }
+        .mat-icon .ic { width: 34px; height: 34px; }
         .mat-name { font-size: 0.85rem; word-break: break-all; color: #5A5A52; }
-        .mat-eye {
+        .mat-del {
             position: absolute; top: 0.5rem; right: 0.5rem; cursor: pointer;
-            font-size: 1rem; padding: 0.2rem 0.35rem; border-radius: 0.4rem;
-            background: rgba(255,255,255,0.9); border: 1px solid #E2D9C8;
+            width: 26px; height: 26px; border-radius: 0.4rem; display: none;
+            align-items: center; justify-content: center; color: #8A6A43;
+            background: rgba(255,255,255,0.95); border: 1px solid #E2D9C8;
         }
-        .mat-eye:hover { background: #F0E3D0; }
+        .mat-card:hover .mat-del { display: flex; }
+        .mat-del:hover { background: #FBE3E1; border-color: #D9534F; color: #D9534F; }
         .mat-sub { font-size: 0.72rem; color: #A0A096; margin-top: 0.3rem; }
 
         .empty-mini { text-align: center; padding: 4rem 2rem; color: #8A8A80; }
@@ -181,7 +218,7 @@
     </nav>
 
     <div class="container">
-        <a href="/library" class="back-btn">← 返回课程笔记库</a>
+        <a href="/library" class="back-btn with-ic"><span data-icon="back" data-icon-size="16"></span> 返回课程笔记库</a>
         <div class="breadcrumb"><a href="/library">课程笔记库</a> / <span id="bcName">课程</span></div>
         <div class="course-head">
             <div class="course-bar" id="courseBar"></div>
@@ -189,8 +226,8 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" data-tab="summary">📄 课程总结</div>
-            <div class="tab" data-tab="materials">📂 课堂资料</div>
+            <div class="tab active with-ic" data-tab="summary"><span data-icon="summary" data-icon-size="16"></span> 课程总结</div>
+            <div class="tab with-ic" data-tab="materials"><span data-icon="folder" data-icon-size="16"></span> 课堂资料</div>
         </div>
 
         <!-- 课程总结：会话列表 + 选中内容 + 思维导图 -->
@@ -205,11 +242,11 @@
 
             <!-- 思维导图（整合进课程总结） -->
             <div id="mindmapSection" style="margin-top:2rem; display:none;">
-                <div class="section-label">🧠 思维导图</div>
+                <div class="section-label with-ic"><span data-icon="mindmap" data-icon-size="18"></span> 思维导图</div>
                 <div class="mindmap-toolbar">
-                    <button class="export-btn" onclick="exportMindmap('png')">⬇️ 导出 PNG</button>
-                    <button class="export-btn" onclick="exportMindmap('jpg')">⬇️ 导出 JPG</button>
-                    <button class="export-btn" onclick="exportMindmap('pdf')">⬇️ 导出 PDF</button>
+                    <button class="export-btn with-ic" onclick="exportMindmap('png')"><span data-icon="download" data-icon-size="15"></span> 导出 PNG</button>
+                    <button class="export-btn with-ic" onclick="exportMindmap('jpg')"><span data-icon="download" data-icon-size="15"></span> 导出 JPG</button>
+                    <button class="export-btn with-ic" onclick="exportMindmap('pdf')"><span data-icon="download" data-icon-size="15"></span> 导出 PDF</button>
                 </div>
                 <div class="mindmap-box"><svg id="mindmap-svg"></svg></div>
             </div>
@@ -224,7 +261,7 @@
         <div class="preview-dialog" onclick="event.stopPropagation()">
             <div class="preview-modal-head">
                 <span id="previewTitle">预览</span>
-                <span class="preview-close" onclick="closePreview()">✕</span>
+                <span class="preview-close" onclick="closePreview()" data-icon="close" data-icon-size="18"></span>
             </div>
             <div class="preview-modal-body" id="previewBody"></div>
         </div>
@@ -235,6 +272,10 @@
     <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
+    <script src="/static/icons.js"></script>
+    <script src="/static/docpreview.js"></script>
     <script src="/static/course.js"></script>
 </body>
 </html>

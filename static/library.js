@@ -37,15 +37,15 @@ function renderGrid(list) {
         if (courses.length === 0) {
             area.innerHTML = `
                 <div class="empty">
-                    <div class="big-icon">📚</div>
+                    <div class="big-icon">${icon('book', 56)}</div>
                     <h2>还没有课程</h2>
                     <p>点击「新建课程」，开始整理你的第一门课程。</p>
-                    <button class="btn-new" onclick="openCreateModal()">＋ 创建课程</button>
+                    <button class="btn-new with-ic" onclick="openCreateModal()">${icon('plus',16)} 创建课程</button>
                 </div>`;
         } else {
             area.innerHTML = `
                 <div class="empty">
-                    <div class="big-icon">🔍</div>
+                    <div class="big-icon">${icon('search', 56)}</div>
                     <h2>没有匹配的课程</h2>
                     <p>换个关键词试试吧。</p>
                 </div>`;
@@ -63,9 +63,9 @@ function cardHtml(c) {
         <div class="card" onclick="openCourse(${c.id})">
             <div class="card-bar" style="background:${color}"></div>
             <div class="card-actions" onclick="event.stopPropagation()">
-                <div class="act-btn" title="重命名" onclick="openRenameModal(${c.id})">✏️</div>
-                <div class="act-btn" title="更换颜色" onclick="openColorModal(${c.id})">🎨</div>
-                <div class="act-btn" title="删除课程" onclick="confirmDelete(${c.id})">🗑️</div>
+                <div class="act-btn" title="重命名" onclick="openRenameModal(${c.id})">${icon('edit',15)}</div>
+                <div class="act-btn" title="更换颜色" onclick="openColorModal(${c.id})">${icon('palette',15)}</div>
+                <div class="act-btn" title="删除课程" onclick="confirmDelete(${c.id})">${icon('trash',15)}</div>
             </div>
             <div class="card-body">
                 <div class="card-title">
@@ -73,8 +73,8 @@ function cardHtml(c) {
                     ${escapeHtml(c.name)}
                 </div>
                 <div class="card-stats">
-                    <span class="stat">📌 重点：<span class="num">${c.key_points_count || 0}</span></span>
-                    <span class="stat">📝 笔记：<span class="num">${c.notes_count || 0}</span></span>
+                    <span class="stat with-ic">${icon('star',14)} 重点：<span class="num">${c.key_points_count || 0}</span></span>
+                    <span class="stat with-ic">${icon('fileText',14)} 笔记：<span class="num">${c.notes_count || 0}</span></span>
                 </div>
                 <div class="card-updated">更新于：${updated}</div>
             </div>
