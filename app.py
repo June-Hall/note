@@ -60,6 +60,34 @@ def _set(job_id: str, status: str, progress: str):
     jobs[job_id]["progress"] = progress
 
 
+def _extract_docx_text(path: str) -> str:
+    """提取 Word 文档中的正文、表格和页眉页脚文本。"""
+    from docx import Document
+
+    doc = Document(path)
+    parts: list[str] = []
+
+    for p in doc.paragraphs:
+        text = p.text.strip()
+        if text:
+            parts.append(text)
+
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if cells:
+                parts.append("\t".join(cells))
+
+    for section in doc.sections:
+        for block in (section.header.paragraphs, section.footer.paragraphs):
+            for p in block:
+                text = p.text.strip()
+                if text:
+                    parts.append(text)
+
+    return "\n".join(parts).strip()
+
+
 async def _run_pipeline(job_id: str, subject: str, outline: str, saved_files: list[Path], color: str = "blue"):
     """后台运行完整处理流程"""
     job_dir = OUTPUT_DIR / job_id
@@ -79,11 +107,25 @@ async def _run_pipeline(job_id: str, subject: str, outline: str, saved_files: li
 
             elif suffix in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
                 _set(job_id, "running", f"🖼️ OCR识别: {fp.name}")
-                from modules.ocr import extract_text
+                try:
+                    from modules.ocr import extract_text
+                except ModuleNotFoundError as exc:
+                    if exc.name == "paddleocr":
+                        _set(
+                            job_id,
+                            "error",
+                            "❌ 当前部署环境未安装 PaddleOCR，暂时不能从图片中提取文字。请改用本地完整环境，或先把图片文字转成 TXT/Word/PDF 后再上传。",
+                        )
+                        return
+                    raise
                 texts.append(await asyncio.to_thread(extract_text, str(fp)))
 
             elif suffix in {".txt", ".md", ".srt"}:
                 texts.append(fp.read_text(encoding="utf-8", errors="ignore"))
+
+            elif suffix in {".docx"}:
+                _set(job_id, "running", f"📄 提取Word文字: {fp.name}")
+                texts.append(await asyncio.to_thread(_extract_docx_text, str(fp)))
 
             elif suffix in {".pptx"}:
                 _set(job_id, "running", f"📊 提取PPT文字: {fp.name}")
